@@ -7,10 +7,18 @@ const loading = ref(false)
 
 const filters = ['All', 'Politics', 'World', 'Local', 'Sport', 'Business']
 
+// Analytics stats — swap these values for real data from your scrape job results
+const stats = ref([
+  { label: 'Total Items', value: '142', badge: '98%' },
+  { label: 'Succes rate', value: '98.6%', badge: '0.4%' },
+  { label: 'Active sources', value: '1', badge: '20' },
+  { label: 'Total Items', value: '142', badge: null },
+])
+
 function handleScrape() {
   if (loading.value) return
   loading.value = true
-  
+
   console.log('Initiating scrape job targeting:', {
     filter: activeCategory.value,
     search: query.value
@@ -27,7 +35,7 @@ function handleScrape() {
 <template>
   <div class="dashboard-canvas">
     <div class="dashboard-frame">
-      
+
       <header class="console-header">
         <div class="brand-group">
           <h1>EWN Console</h1>
@@ -38,8 +46,8 @@ function handleScrape() {
       <div class="controls-toolbar">
         <div class="left-controls">
           <div class="pills-row">
-            <button 
-              v-for="item in filters" 
+            <button
+              v-for="item in filters"
               :key="item"
               :class="{ 'active-pill': activeCategory === item }"
               @click="activeCategory = item"
@@ -48,25 +56,36 @@ function handleScrape() {
             </button>
           </div>
         </div>
-        
+
         <div class="right-controls">
           <div class="search-container">
-            <input 
+            <input
               v-model="query"
-              type="text" 
-              placeholder="Search headlines, authors, topics..." 
+              type="text"
+              placeholder="Search headlines, authors, topics..."
               class="figma-search"
             />
             <span class="status-indicator"></span>
           </div>
 
-          <button 
-            :disabled="loading" 
-            @click="handleScrape" 
+          <button
+            :disabled="loading"
+            @click="handleScrape"
             class="scrape-action-btn"
           >
             {{ loading ? 'Running...' : 'Run Scrape Job' }}
           </button>
+        </div>
+      </div>
+
+      <!-- Analytics stats grid -->
+      <div class="stats-grid">
+        <div v-for="(stat, index) in stats" :key="index" class="stat-card">
+          <div class="stat-top">
+            <span class="stat-label">{{ stat.label }}</span>
+            <span v-if="stat.badge" class="stat-badge">{{ stat.badge }}</span>
+          </div>
+          <div class="stat-value">{{ stat.value }}</div>
         </div>
       </div>
 
@@ -209,6 +228,45 @@ function handleScrape() {
   cursor: not-allowed;
 }
 
+/* Analytics stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.stat-card {
+  background-color: #f1f3f4;
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+
+.stat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.stat-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e8e3e;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
 @media (max-width: 900px) {
   .controls-toolbar {
     flex-direction: column;
@@ -217,6 +275,15 @@ function handleScrape() {
   .right-controls {
     width: 100%;
     justify-content: space-between;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
