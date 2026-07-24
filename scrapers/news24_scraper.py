@@ -1,22 +1,19 @@
-import time
 import re
+import time
 from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 
 
-SOURCE_NAME = "EWN"
-BASE_URL = "https://www.ewn.co.za"
+SOURCE_NAME = "News24"
+BASE_URL = "https://www.news24.com"
 TOPIC_URLS = {
-    "ewn_latest": f"{BASE_URL}/latest",
-    "ewn_local": f"{BASE_URL}/topics/Local",
-    "ewn_politics": f"{BASE_URL}/topics/Politics",
-    "ewn_world": f"{BASE_URL}/topics/World",
+    "news24_latest": BASE_URL,
 }
 
 
-class EWNScraper:
+class News24Scraper:
 
     def __init__(self):
         self.headers = {
@@ -65,7 +62,6 @@ class EWNScraper:
                 if value:
                     tags.append(value)
 
-        # Keep order, remove duplicates.
         deduped = []
         seen = set()
         for value in tags:
@@ -81,7 +77,7 @@ class EWNScraper:
         links = []
         seen = set()
         listing_host = urlparse(listing_url).netloc
-        article_pattern = re.compile(r"^/\d{4}/\d{2}/\d{2}/")
+        article_pattern = re.compile(r"^/.+-20\d{6}-\d{3,4}$")
 
         for anchor in soup.select("a[href]"):
             href = anchor.get("href", "").strip()
@@ -114,10 +110,7 @@ class EWNScraper:
     def scrape_article(self, article_url, topic_key):
         soup = self._get_soup(article_url)
 
-        title = self._meta_content(soup, prop="og:title") or self._meta_content(
-            soup,
-            name="title"
-        )
+        title = self._meta_content(soup, prop="og:title")
         description = self._meta_content(
             soup,
             name="description"
@@ -140,9 +133,9 @@ class EWNScraper:
             "url": article_url,
         }
 
-    def scrape(self, topic_key="ewn_latest", limit=10):
+    def scrape(self, topic_key="news24_latest", limit=10):
         if topic_key not in TOPIC_URLS:
-            raise ValueError(f"Unsupported EWN topic: {topic_key}")
+            raise ValueError(f"Unsupported News24 topic: {topic_key}")
 
         listing_url = TOPIC_URLS[topic_key]
         listing_soup = self._get_soup(listing_url)
@@ -150,7 +143,6 @@ class EWNScraper:
 
         articles = []
         for article_url in article_urls:
-            # Politeness delay to avoid hammering the upstream site.
             time.sleep(0.5)
 
             try:
