@@ -4,219 +4,201 @@ import { ref } from 'vue'
 const query = ref('')
 const activeCategory = ref('All')
 const loading = ref(false)
-
 const filters = ['All', 'Politics', 'World', 'Local', 'Sport', 'Business']
 
 function handleScrape() {
   if (loading.value) return
   loading.value = true
-  
-  console.log('Initiating scrape job targeting:', {
-    filter: activeCategory.value,
-    search: query.value
-  })
-
-  // live web scraping API latency
-  setTimeout(() => {
-    loading.value = false
-    alert(`Data aggregation complete for section: ${activeCategory.value}`)
-  }, 2500)
+  setTimeout(() => { loading.value = false }, 2500)
 }
 </script>
 
 <template>
-  <div class="dashboard-canvas">
-    <div class="dashboard-frame">
+  <div class="dashboard-controls-wrapper">
+    <!-- Main Command Card Module -->
+    <div class="dashboard-card">
       
-      <header class="console-header">
-        <div class="brand-group">
-          <h1>EWN Console</h1>
-          <p class="subtitle">SCRAPING ANALYTICS PLATFORM</p>
-        </div>
-      </header>
-
-      <div class="controls-toolbar">
-        <div class="left-controls">
-          <div class="pills-row">
-            <button 
-              v-for="item in filters" 
-              :key="item"
-              :class="{ 'active-pill': activeCategory === item }"
-              @click="activeCategory = item"
-            >
-              {{ item }}
-            </button>
-          </div>
+      <!-- Top Row: Structured Search Box and Trigger Action Button -->
+      <div class="search-action-row">
+        <div class="search-field-box">
+          <svg class="search-lens-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input v-model="query" type="text" placeholder="Search global data feeds..." class="figma-search" />
         </div>
         
-        <div class="right-controls">
-          <div class="search-container">
-            <input 
-              v-model="query"
-              type="text" 
-              placeholder="Search headlines, authors, topics..." 
-              class="figma-search"
-            />
-            <span class="status-indicator"></span>
-          </div>
-
-          <button 
-            :disabled="loading" 
-            @click="handleScrape" 
-            class="scrape-action-btn"
-          >
-            {{ loading ? 'Running...' : 'Run Scrape Job' }}
-          </button>
-        </div>
+        <button :disabled="loading" @click="handleScrape" class="scrape-action-btn">
+          {{ loading ? 'Running Pipeline...' : 'Run Scrape Job' }}
+        </button>
       </div>
 
+      <!-- Bottom Row: Sleek Segmented Category Navigation Underline Tabs -->
+      <div class="filter-navigation-tabs">
+        <button 
+          v-for="item in filters" 
+          :key="item"
+          :class="{ 'active-tab-pill': activeCategory === item }"
+          @click="activeCategory = item"
+        >
+          {{ item }}
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 
+      TEAMMATE RESERVED WORKSPACE BUFFER
+      This dedicated section remains open. Your teammate can drop their data tables, 
+      analytics components, or graphs here, and they will stack cleanly.
+    -->
+    <div class="teammate-workspace-zone">
+      <!-- Your teammate's code will automatically sit right here -->
     </div>
   </div>
 </template>
 
 <style scoped>
-.dashboard-canvas {
-  background-color: #f8f9fa;
-  min-height: 100vh;
-  padding: 24px;
-  font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+.dashboard-controls-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 32px; /* Leaves a professional spatial gap above your teammate's upcoming component entries */
 }
 
-.dashboard-frame {
-  max-width: 1200px;
-  margin: 0 auto;
+.dashboard-card {
   background-color: #ffffff;
-  padding: 0 24px 24px 24px;
+  color: #0f172a;
+  padding: 40px; /* Matching structural symmetry padding measurements */
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 32px; /* Distinctly separates the input elements row from the filter tabs line */
 }
 
-.console-header {
-  padding: 20px 0 10px 0;
-  border-bottom: 1px solid #e0e0e0;
-  margin-bottom: 15px;
-}
-
-.brand-group h1 {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0;
-}
-
-.brand-group .subtitle {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #757575;
-  margin: 2px 0 0 0;
-}
-
-.controls-toolbar {
+/* Wide Command Row: Spans fully across the page bounds layout */
+.search-action-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 15px;
   gap: 20px;
+  width: 100%;
 }
 
-.right-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.pills-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.pills-row button {
-  background-color: #f1f3f4;
-  color: #5f6368;
-  border: 1px solid transparent;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.pills-row button:hover {
-  background-color: #e8eaed;
-}
-
-.pills-row button.active-pill {
-  background-color: #1a73e8;
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.search-container {
+.search-field-box {
   position: relative;
-  display: inline-block;
+  flex-grow: 1; /* Maximizes horizontal search display focus area space naturally */
+  display: flex;
+  align-items: center;
+}
+
+/* Subtle clean vector search glass emblem placement icon inside the text input box */
+.search-lens-icon {
+  position: absolute;
+  left: 18px;
+  width: 18px;
+  height: 18px;
+  color: #94a3b8;
+  pointer-events: none;
 }
 
 .figma-search {
-  width: 240px;
-  padding: 8px 32px 8px 12px;
-  font-size: 12px;
-  border: 1px solid #dadce0;
-  border-radius: 4px;
-  color: #3c4043;
+  width: 100%; 
+  padding: 0 18px 0 48px; /* Offset padding avoids writing text over the search magnifying glass */
+  font-family: inherit;
+  font-size: 15px;
+  border: 1px solid #cbd5e1; 
+  border-radius: 6px; 
   background-color: #ffffff;
+  color: #0f172a;
+  height: 52px; /* Locked alignment baseline heights */
   box-sizing: border-box;
+  transition: all 0.15s ease;
 }
 
 .figma-search:focus {
   outline: none;
-  border-color: #1a73e8;
-}
-
-.status-indicator {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 8px;
-  height: 8px;
-  background-color: #00e676;
-  border-radius: 50%;
+  border-color: #0f172a;
+  box-shadow: 0 0 0 1px #0f172a;
 }
 
 .scrape-action-btn {
-  background-color: #1b1464;
-  color: #ffffff;
+  background-color: #0f172a; 
+  color: #ffffff; 
   border: none;
-  padding: 8px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 4px;
+  font-family: inherit;
+  padding: 0 32px; 
+  font-size: 15px; 
+  font-weight: 600; 
+  border-radius: 6px; 
   cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.2s;
+  height: 52px; 
+  white-space: nowrap; 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
 }
 
-.scrape-action-btn:hover {
-  background-color: #130d43;
+.scrape-action-btn:hover:not(:disabled) {
+  background-color: #1e293b;
 }
 
 .scrape-action-btn:disabled {
-  background-color: #757575;
+  background-color: #94a3b8;
   cursor: not-allowed;
 }
 
-@media (max-width: 900px) {
-  .controls-toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .right-controls {
-    width: 100%;
-    justify-content: space-between;
-  }
+/* Rebuilt Filter Navigation: Clean enterprise underline alignment strip style */
+.filter-navigation-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #e2e8f0; /* Soft anchoring baseline divider rule */
+  width: 100%;
+}
+
+.filter-navigation-tabs button {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  padding: 12px 20px;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.filter-navigation-tabs button:hover {
+  color: #0f172a;
+}
+
+/* Premium Highlight State: Adds a clean base indicator tab bar matching standard professional SaaS products */
+.filter-navigation-tabs button.active-tab-pill {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.filter-navigation-tabs button.active-tab-pill::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; /* Overlaps perfectly on top of the border tracking layout rule line */
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #0f172a;
+}
+
+/* Explicitly empty layout container layer blocks out space cleanly below your part */
+.teammate-workspace-zone {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 </style>
