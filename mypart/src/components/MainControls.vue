@@ -44,14 +44,8 @@ function handleScrape() {
         </div>
 
         <nav class="nav-links">
-          <a
-            :class="{ 'nav-active': activeNav === 'Dashboard' }"
-            @click="activeNav = 'Dashboard'"
-          >Dashboard</a>
-          <a
-            :class="{ 'nav-active': activeNav === 'Websites' }"
-            @click="activeNav = 'Websites'"
-          >Websites</a>
+          <router-link to="/" exact-active-class="nav-active">Dashboard</router-link>
+          <router-link to="/websites" exact-active-class="nav-active">Websites</router-link>
         </nav>
       </header>
 
@@ -166,6 +160,7 @@ function handleScrape() {
   font-size: 16px;
   font-weight: 500;
   color: #9aa0a6;
+  text-decoration: none;
   cursor: pointer;
   padding-bottom: 6px;
   transition: color 0.2s ease;

@@ -1,9 +1,8 @@
 <script setup>
-import MainControls from './components/MainControls.vue'
 </script>
 
 <template>
-  <MainControls />
+  <router-view />
 </template>
 
 <style>
