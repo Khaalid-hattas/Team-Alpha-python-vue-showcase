@@ -1,0 +1,68 @@
+from flask import Flask, jsonify
+from flask_cors import CORS
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+
+# Import Blueprints
+from routes.health import health_bp
+from routes.items import items_bp
+from routes.statistics import statistics_bp
+from routes.history import history_bp
+from routes.search import search_bp
+from routes.websites import websites_bp
+
+
+app = Flask(__name__)
+
+# Configure secret key
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+
+# Enable CORS
+CORS(app)
+
+
+# Register Blueprints
+app.register_blueprint(health_bp)
+app.register_blueprint(items_bp)
+app.register_blueprint(statistics_bp)
+app.register_blueprint(history_bp)
+app.register_blueprint(search_bp)
+app.register_blueprint(websites_bp)
+
+
+@app.route("/")
+def home():
+    return {
+        "message": "Welcome to Team Alpha Backend API"
+    }
+
+
+# Handle 404 errors
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        "error": "Resource not found"
+    }), 404
+
+
+# Handle 500 errors
+@app.errorhandler(500)
+def internal_server_error(error):
+    return jsonify({
+        "error": "Internal server error"
+    }), 500
+
+
+# Handle unexpected exceptions
+@app.errorhandler(Exception)
+def handle_exception(error):
+    return jsonify({
+        "error": str(error)
+    }), 500
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
