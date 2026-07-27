@@ -7,11 +7,14 @@ import os
 from html import escape
 from string import Template
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 from services.scraper_service import get_scheduler_status, scrape_all_sources, start_scheduler
 from services.storage import get_articles, init_storage
 
+load_dotenv()
 
 ROOT_PREVIEW_LIMIT = 12
 
@@ -28,6 +31,7 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+CORS(app, origins=[os.getenv("CORS_ORIGIN", "http://localhost:5173")])
 
 
 @app.get("/")
@@ -106,90 +110,54 @@ def root() -> tuple:
         p {
             margin: 0 0 16px;
             color: var(--muted);
-            .hero-row {
-        }}
-        .hero-row {{
+        }
+        .hero-row {
             display: flex;
             gap: 12px;
-            }
-            .pill, .button {
         }
-        .pill, .button {{
+        .pill, .button {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             border-radius: 999px;
             padding: 10px 14px;
-            }
-            .pill {
-        }}
-        .pill {{
-            }
-            .button {
-        }}
-        .button {{
-            }
-            .panel {
-        }}
-            }
-            .panel h2 {
-        }}
-        .panel h2 {{
-            }
-            .grid {
-        }}
-        .grid {{
+        }
+        .panel h2 {
+            margin: 0 0 8px;
+        }
+        .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            }
-            .card {
-        }}
-        .card {{
+            gap: 16px;
+        }
+        .card {
             border: 1px solid var(--line);
             border-radius: 14px;
-            }
-            .card h2 {
-        }}
-        .card h2 {{
+            padding: 16px;
+        }
+        .card h2 {
             margin: 0 0 8px;
             font-size: 1.05rem;
-            .card a {
         }
-        .card a {{
-            }
-            .card a:hover {
-        }}
-            }
-            .eyebrow {
-        }}
-        .eyebrow {{
+        .eyebrow {
             margin: 0 0 10px;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             font-size: 0.74rem;
-            }
-            .meta {
-        }}
-        .meta {{
-            font-size: 0.85rem;
-            }
-            .links {
         }
-        .links {{
+        .meta {
+            font-size: 0.85rem;
+        }
+        .links {
             display: flex;
             flex-wrap: wrap;
-            }
-            .empty {
         }
-        .empty {{
+        .empty {
             margin: 0;
             padding: 18px;
             border: 1px dashed var(--line);
-            }
-            .empty a {
         }
-        .empty a {{
-            }
+        .empty a {
             font-weight: 700;
         }
     </style>
