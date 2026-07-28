@@ -172,3 +172,19 @@ def get_article_count() -> int:
     with _get_connection() as conn:
         row = conn.execute("SELECT COUNT(1) AS count FROM articles").fetchone()
     return int(row["count"]) if row else 0
+
+
+def seed_websites(metadata: list[dict]) -> None:
+    """Seed missing default websites."""
+    pass
+
+
+def search_articles(query: str, limit: int, offset: int, source: Optional[str] = None) -> tuple[list[dict], int]:
+    """Fallback search"""
+    return [], 0
+
+
+def get_run_history(limit: int = 50, offset: int = 0) -> tuple[list[dict], int]:
+    """Fallback history"""
+    return [], 0
+

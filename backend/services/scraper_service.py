@@ -144,3 +144,7 @@ def get_scheduler_status() -> dict:
         "stored_articles": get_article_count(),
         "sources_registered": sorted(SCRAPER_REGISTRY.keys()),
     }
+
+def get_registry_metadata() -> list[dict]:
+    """Return metadata about registered scrapers."""
+    return [{"name": name, "url": ""} for name in SCRAPER_REGISTRY.keys()]
