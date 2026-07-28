@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify
+from services.scraper_service import SCRAPER_REGISTRY
 
 # Create a Blueprint for the websites routes
 websites_bp = Blueprint("websites", __name__)
@@ -8,8 +9,6 @@ websites_bp = Blueprint("websites", __name__)
 def websites():
 
     # Return the websites that can be scraped
-    return jsonify([
-        "Nike",
-        "News24",
-        "Takealot"
-    ]), 200  # HTTP 200 = Request successful
+    return jsonify({
+        "sources": sorted(SCRAPER_REGISTRY.keys())
+    }),  200  # HTTP 200 = Request successful
