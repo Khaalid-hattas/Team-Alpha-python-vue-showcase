@@ -10,9 +10,16 @@ const category = ref('Local')
 function handleAdd() {
   if (!siteName.value.trim() || !siteUrl.value.trim()) return
 
+  let url = siteUrl.value.trim()
+
+  // Automatically add https:// if the user doesn't type it
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = `https://${url}`
+  }
+
   emit('site-added', {
-    name: siteName.value,
-    url: siteUrl.value,
+    name: siteName.value.trim(),
+    url,
     category: category.value
   })
 
@@ -38,6 +45,7 @@ function handleAdd() {
           v-model="siteName"
           type="text"
           placeholder="e.g. BBC World News"
+          required
         />
       </div>
 
@@ -45,13 +53,15 @@ function handleAdd() {
         <label>Remote Target RSS URL Link</label>
         <input
           v-model="siteUrl"
-          type="url"
+          type="text"
           placeholder="https://feeds.bbci.co.uk/news/rss.xml"
+          required
         />
       </div>
 
       <div class="field">
         <label>Category Mapped Tag</label>
+
         <select v-model="category">
           <option>Local</option>
           <option>Politics</option>
@@ -88,7 +98,6 @@ function handleAdd() {
   margin-bottom: 24px;
 }
 
-/* Improved layout */
 .form {
   padding: 0 24px 24px;
   display: grid;
@@ -109,7 +118,6 @@ function handleAdd() {
   color: var(--text);
 }
 
-/* Larger, cleaner inputs */
 .field input,
 .field select {
   width: 100%;
@@ -118,7 +126,7 @@ function handleAdd() {
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 15px;
-  font-family: 'Inter';
+  font-family: 'Inter', sans-serif;
   background: #fff;
   transition: border-color 0.2s ease;
 }
@@ -133,7 +141,6 @@ function handleAdd() {
   justify-content: flex-end;
 }
 
-/* Improved button */
 .btn-primary {
   height: 46px;
   padding: 0 24px;
@@ -144,7 +151,7 @@ function handleAdd() {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter';
+  font-family: 'Inter', sans-serif;
   white-space: nowrap;
   transition: background 0.2s ease;
 }
@@ -153,7 +160,6 @@ function handleAdd() {
   background: #130d43;
 }
 
-/* Responsive */
 @media (max-width: 1100px) {
   .form {
     grid-template-columns: 1fr;
