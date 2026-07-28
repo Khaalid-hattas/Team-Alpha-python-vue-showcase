@@ -1,26 +1,63 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, provide } from 'vue'
 import MainControls from './components/MainControls.vue'
 import WebsiteManager from './components/WebsiteManager.vue'
 
 const activeTab = ref('Dashboard')
+
+const sourcesList = ref([
+  {
+    id: 1,
+    name: 'EWN',
+    url: 'https://ewn.co.za/rss',
+    category: 'Local',
+    lastScrape: 'Never Scraped',
+    isActive: true
+  },
+  {
+    id: 2,
+    name: 'News24',
+    url: 'https://www.news24.com/rss/news24/topstories',
+    category: 'Politics',
+    lastScrape: 'Never Scraped',
+    isActive: true
+  },
+  {
+    id: 3,
+    name: 'BBC',
+    url: 'https://feeds.bbci.co.uk/news/rss.xml',
+    category: 'World',
+    lastScrape: 'Never Scraped',
+    isActive: true
+  }
+])
+
+const globalArticles = ref([])
+
+provide('globalSources', sourcesList)
+provide('globalArticles', globalArticles)
+provide('activeTab', activeTab)
 </script>
 
 <template>
-  <div class="app-wrapper">
-    <header class="global-header">
+  <div class="app">
+    <header class="header">
       <div class="header-inner">
-        <h1 class="brand">SCRAPING ANALYTICS<br/>PLATFORM</h1>
-        
-        <nav class="top-nav">
-          <button 
-            :class="{ 'active-nav': activeTab === 'Dashboard' }" 
+        <div class="brand">
+          <div class="brand-bar"></div>
+          <h1>SCRAPING ANALYTICS PLATFORM</h1>
+        </div>
+
+        <nav class="nav">
+          <button
+            :class="{ active: activeTab === 'Dashboard' }"
             @click="activeTab = 'Dashboard'"
           >
             Dashboard
           </button>
-          <button 
-            :class="{ 'active-nav': activeTab === 'Websites' }" 
+
+          <button
+            :class="{ active: activeTab === 'Websites' }"
             @click="activeTab = 'Websites'"
           >
             Websites
@@ -29,111 +66,194 @@ const activeTab = ref('Dashboard')
       </div>
     </header>
 
-    <main class="dashboard-frame">
-      <div class="content-container">
-        <Transition name="page-fade" mode="out-in">
-          <MainControls v-if="activeTab === 'Dashboard'" />
-          <WebsiteManager v-else-if="activeTab === 'Websites'" />
-        </Transition>
+    <main class="main">
+      <div class="container">
+
+        <!-- Dashboard -->
+        <div
+          class="page"
+          v-show="activeTab === 'Dashboard'"
+        >
+          <MainControls />
+        </div>
+
+        <!-- Website Manager -->
+        <div
+          class="page"
+          v-show="activeTab === 'Websites'"
+        >
+          <WebsiteManager />
+        </div>
+
       </div>
     </main>
   </div>
 </template>
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-html, body, #app {
-  height: 100%;
-  width: 100%;
+:root{
+  --navy:#212161;
+  --primary:#1b1464;
+  --text:#202124;
+  --text-muted:#5f6368;
+  --border:#dadce0;
+  --bg:#ffffff;
 }
 
-body {
-  /* Removed the dark background completely. Replaced with an off-white canvas layout background */
-  background-color: #f8fafc; 
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #0f172a;
-  -webkit-font-smoothing: antialiased;
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
 }
 
-.app-wrapper { 
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
+html,
+body,
+#app{
+  width:100%;
+  min-height:100%;
+  background:#f8f9fa;
 }
 
-.global-header {
-  background: #ffffff; 
-  color: #0f172a;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  flex-shrink: 0;
-  border-bottom: 1px solid #e2e8f0;
+body{
+  font-family:'Inter',sans-serif;
+  color:var(--text);
+  font-size:14px;
 }
 
-.header-inner {
-  width: 100%;
-  max-width: 95%; /* Expanded screen area width to mirror EWN's wide navbar format */
-  padding: 24px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* ---------- APP ---------- */
+
+.app{
+  width:100%;
+  min-height:100vh;
 }
 
-.brand {
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  line-height: 1.2;
-  color: #0f172a;
+/* ---------- HEADER ---------- */
+
+.header{
+  position:sticky;
+  top:0;
+  z-index:100;
+
+  width:100%;
+  height:64px;
+
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
 }
 
-.top-nav { display: flex; gap: 40px; }
+.header-inner{
+  max-width:1600px;
+  height:100%;
 
-.top-nav button {
-  background: none;
-  border: none;
-  font-family: inherit;
-  font-size: 16px; /* Scaled up for natural readability */
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  padding: 6px 0;
-  transition: color 0.15s ease;
+  margin:auto;
+
+  padding:0 32px;
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
 
-.top-nav button:hover {
-  color: #0f172a;
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+
+  width:340px;
+  flex-shrink:0;
 }
 
-.top-nav button.active-nav {
-  color: #0f172a;
-  border-bottom: 3px solid #0f172a; /* Solid clean tracking line */
+.brand-bar{
+  width:4px;
+  height:24px;
+  background:var(--primary);
 }
 
-.dashboard-frame {
-  width: 100%;
-  padding: 40px 0;
-  display: flex;
-  justify-content: center;
+.brand h1{
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:.3px;
+  white-space:nowrap;
 }
 
-.content-container {
-  width: 100%;
-  max-width: 95%; /* Expanded to allow cards to fill screen real estate naturally */
-  display: flex;
-  flex-direction: column;
+/* ---------- NAV ---------- */
+
+.nav{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+
+  width:220px;
+  flex-shrink:0;
+
+  gap:32px;
 }
 
-.page-fade-enter-active,
-.page-fade-leave-active {
-  transition: opacity 0.15s ease;
+.nav button{
+  background:none;
+  border:none;
+
+  cursor:pointer;
+
+  font-size:14px;
+  font-weight:500;
+
+  color:var(--text-muted);
+
+  padding:8px 0;
+
+  font-family:'Inter';
+
+  transition:.2s;
 }
 
-.page-fade-enter-from,
-.page-fade-leave-to {
-  opacity: 0;
+.nav button.active{
+  color:var(--primary);
+  font-weight:600;
+  border-bottom:2px solid var(--primary);
+}
+
+/* ---------- MAIN ---------- */
+
+.main{
+  width:100%;
+  padding:28px 0;
+}
+
+.container{
+  max-width:1600px;
+  margin:auto;
+  padding:0 32px;
+}
+
+/* ---------- PAGES ---------- */
+
+.page{
+  width:100%;
+  animation:fade .25s ease;
+}
+
+/* ---------- GLOBAL CARD ---------- */
+
+.card{
+  background:white;
+  border:1px solid var(--border);
+  border-radius:8px;
+}
+
+/* ---------- FADE ---------- */
+
+@keyframes fade{
+
+  from{
+    opacity:0;
+  }
+
+  to{
+    opacity:1;
+  }
+
 }
 </style>

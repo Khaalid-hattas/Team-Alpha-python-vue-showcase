@@ -5,164 +5,166 @@ const emit = defineEmits(['site-added'])
 
 const siteName = ref('')
 const siteUrl = ref('')
-const category = ref('News')
-const error = ref('')
+const category = ref('Local')
 
-function isValidUrl(string) {
-  try { new URL(string); return true } 
-  catch (_) { return false }
-}
+function handleAdd() {
+  if (!siteName.value.trim() || !siteUrl.value.trim()) return
 
-async function handleAdd() {
-  error.value = ''
-  if (!siteName.value.trim()) {
-    error.value = 'Site name is required'
-    return
-  }
-  if (!isValidUrl(siteUrl.value)) {
-    error.value = 'Please enter a valid URL'
-    return
-  }
+  emit('site-added', {
+    name: siteName.value,
+    url: siteUrl.value,
+    category: category.value
+  })
 
-  const payload = { name: siteName.value, url: siteUrl.value, category: category.value }
-  emit('site-added', payload)
-  
   siteName.value = ''
   siteUrl.value = ''
-  category.value = 'News'
+  category.value = 'Local'
 }
 </script>
 
 <template>
-  <div class="manager-card">
+  <div class="card">
     <div class="card-header">
-      <h3>Register a new source</h3>
-      <p class="card-sub">GET / POST / api / websites</p>
+      <h2>Register Pipeline Feed Stream</h2>
+      <p class="subtitle">
+        Connect automated targets via remote XML/RSS protocols
+      </p>
     </div>
 
-    <div class="form-row">
-      <div class="input-group">
-        <label class="field-label">Site Name</label>
-        <input v-model="siteName" type="text" placeholder="e.g. Eyewitness News" class="figma-input" />
+    <form @submit.prevent="handleAdd" class="form">
+      <div class="field">
+        <label>Stream Reference Name</label>
+        <input
+          v-model="siteName"
+          type="text"
+          placeholder="e.g. BBC World News"
+        />
       </div>
-      
-      <div class="input-group-url">
-        <label class="field-label">Target URL</label>
-        <input v-model="siteUrl" type="url" placeholder="https://ewn.co.za" class="figma-input" />
-      </div>
-      
-      <div class="input-group">
-        <label class="field-label">Category</label>
-        <input v-model="category" type="text" placeholder="News" class="figma-input" />
-      </div>
-      
-      <div class="btn-group">
-        <button @click="handleAdd" class="add-btn">Add Source</button>
-      </div>
-    </div>
 
-    <p v-if="error" class="error-text">{{ error }}</p>
+      <div class="field">
+        <label>Remote Target RSS URL Link</label>
+        <input
+          v-model="siteUrl"
+          type="url"
+          placeholder="https://feeds.bbci.co.uk/news/rss.xml"
+        />
+      </div>
+
+      <div class="field">
+        <label>Category Mapped Tag</label>
+        <select v-model="category">
+          <option>Local</option>
+          <option>Politics</option>
+          <option>World</option>
+          <option>Sport</option>
+          <option>Business</option>
+        </select>
+      </div>
+
+      <div class="field button-field">
+        <button type="submit" class="btn-primary">
+          Add Pipeline Stream
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
 <style scoped>
-.manager-card { 
-  background: #ffffff; 
-  color: #0f172a;
-  border-radius: 8px; 
-  padding: 48px; /* Explicit structural layout match symmetry */
-  border: 1px solid #e2e8f0; 
-  width: 100%;
-  box-sizing: border-box;
+.card-header {
+  padding: 24px;
+  padding-bottom: 0;
 }
 
-.card-header h3 { 
-  font-size: 24px; 
-  font-weight: 700; 
-  color: #0f172a;
+.card-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
-.card-sub { 
-  font-size: 14px; 
-  color: #64748b; 
-  font-family: monospace;
-  margin: 6px 0 36px 0; 
+.subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
 }
 
-.form-row { 
-  display: grid; 
-  grid-template-columns: 1fr 2fr 1fr 160px; /* Standardize final fractional button width column */
-  gap: 24px; 
-  align-items: flex-end; 
-  width: 100%;
+/* Improved layout */
+.form {
+  padding: 0 24px 24px;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr auto;
+  gap: 20px;
+  align-items: end;
 }
 
-.input-group, .input-group-url, .btn-group {
+.field {
   display: flex;
   flex-direction: column;
-  width: 100%;
+  gap: 8px;
 }
 
-.field-label {
-  font-size: 15px; 
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 10px;
-  line-height: 1;
-}
-
-.figma-input { 
-  padding: 0 18px; 
-  border: 1px solid #cbd5e1; 
-  border-radius: 6px; 
-  font-family: inherit;
-  font-size: 15px; 
-  background: #ffffff; 
-  height: 52px; /* Matching pixel field framework line */
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.15s ease;
-}
-
-.figma-input:focus {
-  outline: none;
-  border-color: #0f172a;
-}
-
-.add-btn { 
-  background-color: #0f172a; 
-  color: #ffffff; 
-  border: none; 
-  font-family: inherit;
-  font-size: 15px; 
-  font-weight: 600; 
-  border-radius: 6px; 
-  cursor: pointer; 
-  height: 52px; /* Perfect linear alignment matching structure */
-  width: 100%; 
-  white-space: nowrap; 
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  transition: background-color 0.15s ease;
-}
-
-.add-btn:hover {
-  background-color: #1e293b;
-}
-
-.error-text { 
-  color: #dc2626; 
-  font-size: 13px; 
-  margin-top: 14px; 
+.field label {
+  font-size: 13px;
   font-weight: 500;
+  color: var(--text);
 }
 
-@media (max-width: 1024px) {
-  .form-row {
+/* Larger, cleaner inputs */
+.field input,
+.field select {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 15px;
+  font-family: 'Inter';
+  background: #fff;
+  transition: border-color 0.2s ease;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.button-field {
+  justify-content: flex-end;
+}
+
+/* Improved button */
+.btn-primary {
+  height: 46px;
+  padding: 0 24px;
+  background: #1b1464;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter';
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #130d43;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .form {
     grid-template-columns: 1fr;
-    gap: 20px;
+  }
+
+  .button-field {
+    justify-content: stretch;
+  }
+
+  .btn-primary {
+    width: 100%;
   }
 }
 </style>
