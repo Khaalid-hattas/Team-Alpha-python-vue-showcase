@@ -1,7 +1,7 @@
 <script>
 import MainControls from './components/MainControls.vue'
 import DataDisplay from './components/DataDisplay.vue'
-import api from './services/api.js'
+import api from './services/api.js';
 
 export default {
   components: { MainControls, DataDisplay },
