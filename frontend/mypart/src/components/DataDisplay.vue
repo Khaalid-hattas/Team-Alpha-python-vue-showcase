@@ -27,6 +27,7 @@
 <script>
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
+import api from './services/api';
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
@@ -58,3 +59,29 @@ export default {
   }
 }
 </script>
+<style>
+.charts-row {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+.chart-card, .table-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  flex: 1;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+h3 {
+  margin-top: 0;
+}
+</style>
