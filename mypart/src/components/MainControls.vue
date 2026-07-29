@@ -1,393 +1,416 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, inject, computed } from 'vue'
+import DataDisplay from './DataDisplay.vue'
 
 const query = ref('')
-const activeCategory = ref('All')
-const activeNav = ref('Websites')
+const activeFilter = ref('All')
 const loading = ref(false)
 
-const filters = ['All', 'Politics', 'World', 'Local', 'Sport', 'Business']
+const filters = [
+  'All',
+  'Politics',
+  'World',
+  'Local',
+  'Sport',
+  'Business'
+]
 
-// Analytics stats — swap these values for real data from your scrape job results
-const stats = ref([
-  { label: 'Total Items', value: '142', badge: '98%' },
-  { label: 'Succes rate', value: '98.6%', badge: '0.4%' },
-  { label: 'Active sources', value: '1', badge: '20' },
-  { label: 'Total Items', value: '142', badge: null },
-])
+const globalSources = inject('globalSources')
+const globalArticles = inject('globalArticles')
 
-function handleScrape() {
-  if (loading.value) return
-  loading.value = true
+const globalStats = computed(() => {
+  const counts = {}
 
-  console.log('Initiating scrape job targeting:', {
-    filter: activeCategory.value,
-    search: query.value
+  globalArticles.value.forEach(article => {
+    counts[article.category] = (counts[article.category] || 0) + 1
   })
 
-  // live web scraping API latency
-  setTimeout(() => {
-    loading.value = false
-    alert(`Data aggregation complete for section: ${activeCategory.value}`)
-  }, 2500)
+  return {
+    top_categories: Object.entries(counts).map(([name, count]) => ({
+      name,
+      count
+    }))
+  }
+})
+
+async function fetchRSS(url) {
+  const proxy1 = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`
+
+  try {
+    const res = await fetch(proxy1)
+    const data = await res.json()
+
+    if (data.status === 'ok') {
+      return data.items
+    }
+
+    throw new Error(data.message)
+  } catch (e) {
+    console.warn('rss2json failed, trying backup')
+
+    const proxy2 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
+
+    const res2 = await fetch(proxy2)
+    const data2 = await res2.json()
+
+    const parser = new DOMParser()
+
+    const xml = parser.parseFromString(
+      data2.contents,
+      'text/xml'
+    )
+
+    return Array.from(xml.querySelectorAll('item')).map(item => ({
+      title: item.querySelector('title')?.textContent || '',
+      link: item.querySelector('link')?.textContent || '#',
+      description:
+        item.querySelector('description')?.textContent || ''
+    }))
+  }
+}
+
+const filteredArticles = computed(() => {
+  let articles = globalArticles.value
+
+  if (activeFilter.value !== 'All') {
+    articles = articles.filter(
+      article =>
+        article.category.toLowerCase() ===
+        activeFilter.value.toLowerCase()
+    )
+  }
+
+  if (query.value.trim()) {
+    const search = query.value.toLowerCase()
+
+    articles = articles.filter(article =>
+      article.title.toLowerCase().includes(search) ||
+      article.description.toLowerCase().includes(search) ||
+      article.sourceName.toLowerCase().includes(search)
+    )
+  }
+
+  return articles
+})
+
+async function handleScrape() {
+  loading.value = true
+  globalArticles.value = []
+
+  const timestamp = new Date().toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+    for (const source of globalSources.value.filter(s => s.isActive)) {
+    try {
+      const items = await fetchRSS(source.url)
+
+      items.slice(0, 15).forEach((item, index) => {
+        globalArticles.value.push({
+          id: `${source.id}-${index}-${Date.now()}`,
+          title: item.title,
+          link: item.link,
+          description:
+            (item.description || '')
+              .replace(/<[^>]*>/g, '')
+              .substring(0, 200) + '...',
+          sourceName: source.name,
+          category: source.category
+        })
+      })
+
+      source.lastScrape = `Success: ${timestamp}`
+    } catch (error) {
+      console.error(error)
+      source.lastScrape = 'Failed'
+    }
+  }
+
+  loading.value = false
 }
 </script>
 
 <template>
-  <div class="dashboard-canvas">
-    <div class="dashboard-frame">
+  <div class="dashboard">
+    <div class="dashboard-header">
+      <div>
+        <h1>Dashboard Overview</h1>
+        <p class="muted">
+          Real-time asynchronous news parsing engine
+        </p>
+      </div>
 
-      <!-- Top nav bar -->
-      <header class="top-nav">
-        <div class="brand-group">
-          <h1>SCRAPING ANALYTICS<br />PLATFORM</h1>
+      <button
+        class="btn-primary"
+        @click="handleScrape"
+        :disabled="loading"
+      >
+        {{ loading ? 'Running Extraction...' : 'Run Scrape Job' }}
+      </button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="card stat">
+        <div class="stat-label">Total Items Fetched</div>
+        <div class="stat-value">{{ globalArticles.length }}</div>
+      </div>
+
+      <div class="card stat">
+        <div class="stat-label">Showing</div>
+        <div class="stat-value">{{ filteredArticles.length }}</div>
+      </div>
+
+      <div class="card stat">
+        <div class="stat-label">Active Sources</div>
+        <div class="stat-value">
+          {{ globalSources.filter(s => s.isActive).length }}/{{ globalSources.length }}
         </div>
+      </div>
+    </div>
 
-        <nav class="nav-links">
-          <a
-            :class="{ 'nav-active': activeNav === 'Dashboard' }"
-            @click="activeNav = 'Dashboard'"
-          >Dashboard</a>
-          <a
-            :class="{ 'nav-active': activeNav === 'Websites' }"
-            @click="activeNav = 'Websites'"
-          >Websites</a>
-        </nav>
-      </header>
+    <DataDisplay :stats="globalStats" />
 
-      <!-- Page heading + search/action row -->
-      <div class="page-heading-row">
-        <div class="page-heading">
-          <h2>Dashboard</h2>
-          <p class="page-subtitle">Source: ewn.co.za &middot; sitemap indexed &middot; Nuxt SSR</p>
-        </div>
+    <div class="card filter-card">
+      <div class="search-row">
+        <input
+          v-model="query"
+          class="search-input"
+          type="text"
+          placeholder="Search headlines, sources..."
+        />
+      </div>
 
-        <div class="right-controls">
-          <div class="search-container">
-            <input
-              v-model="query"
-              type="text"
-              placeholder="Search headlines, authors, topics..."
-              class="figma-search"
-            />
-            <button class="search-btn" type="button" aria-label="Search">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="11" cy="11" r="7" stroke="white" stroke-width="2" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="white" stroke-width="2" stroke-linecap="round" />
-              </svg>
-            </button>
+      <div class="filter-pills">
+        <button
+          v-for="filter in filters"
+          :key="filter"
+          class="filter-btn"
+          :class="{ active: activeFilter === filter }"
+          @click="activeFilter = filter"
+        >
+          {{ filter }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>
+          Aggregated Articles Output Feed
+          ({{ filteredArticles.length }} entries found)
+        </h2>
+      </div>
+
+      <div class="articles">
+                <a
+          v-for="article in filteredArticles"
+          :key="article.id"
+          :href="article.link"
+          target="_blank"
+          class="article-card"
+        >
+          <div class="article-meta">
+            <span class="source">{{ article.sourceName }}</span>
+            <span class="cat">{{ article.category }}</span>
           </div>
 
-          <button
-            :disabled="loading"
-            @click="handleScrape"
-            class="scrape-action-btn"
-          >
-            {{ loading ? 'Running...' : 'Run Scrape Job' }}
-          </button>
+          <h3>{{ article.title }}</h3>
+
+          <p>{{ article.description }}</p>
+        </a>
+
+        <div
+          v-if="filteredArticles.length === 0 && !loading"
+          class="empty"
+        >
+          No articles match your filters. Click "Run Scrape Job".
         </div>
       </div>
-
-      <!-- Filter pills -->
-      <div class="controls-toolbar">
-        <div class="pills-row">
-          <button
-            v-for="item in filters"
-            :key="item"
-            :class="{ 'active-pill': activeCategory === item }"
-            @click="activeCategory = item"
-          >
-            {{ item }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Analytics stats grid -->
-      <div class="stats-grid">
-        <div v-for="(stat, index) in stats" :key="index" class="stat-card">
-          <div class="stat-top">
-            <span class="stat-label">{{ stat.label }}</span>
-            <span v-if="stat.badge" class="stat-badge">{{ stat.badge }}</span>
-          </div>
-          <div class="stat-value">{{ stat.value }}</div>
-        </div>
-      </div>
-
     </div>
   </div>
 </template>
 
 <style scoped>
-.dashboard-canvas {
-  background-color: #f8f9fa;
-  min-height: 100vh;
-  padding: 24px;
-  font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.dashboard-frame {
-  max-width: 1200px;
-  margin: 0 auto;
-  background-color: #ffffff;
-  padding: 0 24px 24px 24px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-/* Top nav bar */
-.top-nav {
+.dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 20px 0 16px 0;
-  border-bottom: 1px solid #e0e0e0;
-  margin-bottom: 24px;
-}
-
-.brand-group h1 {
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.3px;
-  color: #1a1a1a;
-  line-height: 1.3;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.nav-links {
-  display: flex;
-  gap: 28px;
   align-items: center;
-  padding-top: 6px;
 }
 
-.nav-links a {
-  position: relative;
-  font-size: 16px;
-  font-weight: 500;
-  color: #9aa0a6;
-  cursor: pointer;
-  padding-bottom: 6px;
-  transition: color 0.2s ease;
-}
-
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 100%;
-  height: 2px;
-  background-color: #362f78;
-  border-radius: 2px;
-  transform: translateX(-50%) scaleX(0);
-  transform-origin: center;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.nav-links a:hover {
-  color: #362f78;
-}
-
-.nav-links a:hover::after {
-  transform: translateX(-50%) scaleX(1);
-}
-
-.nav-links a.nav-active {
-  color: #362f78;
+.dashboard-header h1 {
+  font-size: 24px;
   font-weight: 700;
 }
 
-.nav-links a.nav-active::after {
-  transform: translateX(-50%) scaleX(1);
-  height: 2.5px;
+.muted {
+  color: var(--text-muted);
 }
 
-/* Page heading row */
-.page-heading-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.page-heading h2 {
-  font-size: 26px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0;
-}
-
-.page-subtitle {
-  font-size: 13px;
-  color: #9aa0a6;
-  margin: 4px 0 0 0;
-}
-
-.right-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-top: 4px;
-}
-
-.search-container {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-}
-
-.figma-search {
-  width: 240px;
-  padding: 8px 12px;
-  font-size: 12px;
-  border: 1px solid #dadce0;
-  border-right: none;
-  border-radius: 4px 0 0 4px;
-  color: #3c4043;
-  background-color: #ffffff;
-  box-sizing: border-box;
-}
-
-.figma-search:focus {
-  outline: none;
-  border-color: #5fae82;
-}
-
-.search-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  border: 1px solid #5fae82;
-  background-color: #5fae82;
-  border-radius: 0 4px 4px 0;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.search-btn:hover {
-  background-color: #519671;
-}
-
-.scrape-action-btn {
-  background-color: #1b1464;
-  color: #ffffff;
+.btn-primary {
+  height: 40px;
+  padding: 0 24px;
+  background: #1b1464;
+  color: white;
   border: none;
-  padding: 10px 18px;
-  font-size: 12px;
-  font-weight: 600;
   border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.2s;
+  font-family: 'Inter', sans-serif;
 }
 
-.scrape-action-btn:hover {
-  background-color: #130d43;
+.btn-primary:hover:not(:disabled) {
+  background: #130d43;
 }
 
-.scrape-action-btn:disabled {
-  background-color: #757575;
+.btn-primary:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* Filter pills */
-.controls-toolbar {
-  margin-bottom: 8px;
-}
-
-.pills-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.pills-row button {
-  background-color: #ffffff;
-  color: #5f6368;
-  border: 1px solid #dadce0;
-  padding: 8px 20px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.pills-row button:hover {
-  background-color: #f1f3f4;
-}
-
-.pills-row button.active-pill {
-  background-color: #1b1464;
-  color: #ffffff;
-  border-color: #1b1464;
-  font-weight: 600;
-}
-
-/* Analytics stats grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-top: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
-.stat-card {
-  background-color: #f1f3f4;
-  border-radius: 8px;
-  padding: 16px 18px;
-}
-
-.stat-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+.stat {
+  padding: 24px;
 }
 
 .stat-label {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1a1a1a;
-}
-
-.stat-badge {
   font-size: 13px;
-  font-weight: 600;
-  color: #1e8e3e;
+  color: var(--text-muted);
 }
 
 .stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #1a1a1a;
+  margin-top: 8px;
 }
 
-@media (max-width: 900px) {
-  .page-heading-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .right-controls {
-    width: 100%;
-    justify-content: space-between;
-  }
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.filter-card {
+  padding: 20px 24px;
 }
 
-@media (max-width: 500px) {
-  .top-nav {
-    flex-direction: column;
-    gap: 12px;
-  }
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
+.search-row {
+  margin-bottom: 16px;
+}
+
+.search-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1b1464;
+}
+
+.filter-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  background: #f1f3f4;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.15s ease;
+}
+
+.filter-btn:hover {
+  background: #e8eaed;
+}
+
+.filter-btn.active {
+  background: #1b1464;
+  color: white;
+  border-color: #1b1464;
+}
+
+.card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.articles {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+}
+
+.article-card {
+  display: block;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.15s ease;
+}
+
+.article-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: #c4c7c5;
+}
+
+.article-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.source,
+.cat {
+  background: #f1f3f4;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.article-card h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.article-card p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.empty {
+  padding: 60px;
+  text-align: center;
+  color: var(--text-muted);
 }
 </style>
