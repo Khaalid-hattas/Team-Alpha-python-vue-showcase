@@ -10,13 +10,13 @@ This project addresses key data integration challenges by delivering a responsiv
 
 ## Company Background
 
-| Detail | Information |
+| Detail | Information | -
 | :--- | :--- |
-| **Project** | Team-Alpha-python-vue-showcase |
-| **Framework** | Vue.js & Flask (Python) |
-| **Core Feature** | Web Scraping & Live Data Integration |
-| **Architecture** | Scalable Full-Stack Application |
-| **Focus** | Real-time Data Visualization & Processing |
+| **Project** | Team-Alpha-python-vue-showcase | -
+| **Framework** | Vue.js & Flask (Python) | -
+| **Core Feature** | Web Scraping & Live Data Integration | -
+| **Architecture** | Scalable Full-Stack Application | -
+| **Focus** | Real-time Data Visualization & Processing | -
 
 ---
 
@@ -39,17 +39,17 @@ To create a **user-friendly, responsive web-based system** that demonstrates how
 
 | Name | roles assigned |
 | :---  | :--- |
-| Nikita Muller |  Team Leader |
-| Sibongile Mapeta | Scrum master  |
-| Khaalid hattas | QA |
+| Nikita Muller |  Team Leader |1
+| Sibongile Mapeta | Scrum master  |2
+| Khaalid hattas | QA |3
 
-| Lisekho  | Frontend dev  |
-| Lukho | Frontend dev |
-| Matthew | Frontend dev |
+| Lisekho  | Frontend dev  |1
+| Lukho | Frontend dev |2
+| Matthew | Frontend dev |3
 
-|Krishendree Kistensamy | Backend dev|
-|Siwaphiwe | Backend dev |
-|Nlaks | Backend dev |
+|Krishendree Kistensamy | Backend dev|1
+|Siwaphiwe | Backend dev |2
+|Nhlakanipho Luthuli | Backend dev  |3
 
 ---
 
@@ -57,9 +57,9 @@ To create a **user-friendly, responsive web-based system** that demonstrates how
 
 | Technology | Purpose |
 | :--- | :--- |
-| **Vue.js** | Frontend framework & reactive components |
-| **Python & Flask** | Backend REST API & web scraping engine |
-| **HTML5** | Structure |
-| **CSS3** | Styling |
-| **JavaScript (ES6)** | Interactivity & API requests |
-| **Git & GitHub** | Version control |
+| **Vue.js** | Frontend framework & reactive components | -
+| **Python & Flask** | Backend REST API & web scraping engine | -
+| **HTML5** | Structure | -
+| **CSS3** | Styling | -
+| **JavaScript (ES6)** | Interactivity & API requests | -
+| **Git & GitHub** | Version control | -
