@@ -1,13 +1,5 @@
 <script setup>
 import { ref, provide } from 'vue'
-<<<<<<< HEAD
-import MainControls from './components/MainControls.vue'
-import WebsiteManager from './components/WebsiteManager.vue'
-import Globe from './components/Globe.vue'
-
-const activeTab = ref('Dashboard')
-=======
->>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
 
 const globalStats = ref({
   top_categories: []
@@ -31,19 +23,21 @@ const sourcesList = ref([
     isActive: true
   },
   {
-    id: 3,
-<<<<<<< HEAD
-    name: 'BBC',
-    url: 'https://bbci.co.uk',
-    category: 'World',
-=======
-    name: 'SABC News',
-    url: 'https://www.sabcnews.com/sabcnews/feed/',
-    category: 'Local',
->>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
-    lastScrape: 'Never Scraped',
-    isActive: true
-  }
+  id: 3,
+  name: 'BBC',
+  url: 'https://bbci.co.uk',
+  category: 'World',
+  lastScrape: 'Never Scraped',
+  isActive: true
+},
+{
+  id: 4,
+  name: 'SABC News',
+  url: 'https://www.sabcnews.com/sabcnews/feed/',
+  category: 'Local',
+  lastScrape: 'Never Scraped',
+  isActive: true
+}
 ])
 
 const globalArticles = ref([])
@@ -83,23 +77,13 @@ provide('clearSelectedSourceName', clearSelectedSourceName)
           <RouterLink to="/websites" class="nav-link" active-class="active">
             <span class="nav-icon" aria-hidden="true"></span>
             Websites
-<<<<<<< HEAD
-          </button>
-
-          <button
-            :class="{ active: activeTab === 'TargetGlobe' }"
-            @click="activeTab = 'TargetGlobe'"
-          >
-            Target Globe
-          </button>
-=======
           </RouterLink>
 
           <RouterLink to="/global-map" class="nav-link" active-class="active">
             <span class="nav-icon" aria-hidden="true"></span>
             Global Map
           </RouterLink>
->>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
+
         </nav>
       </div>
     </header>
@@ -109,21 +93,6 @@ provide('clearSelectedSourceName', clearSelectedSourceName)
         <div class="page">
           <RouterView />
         </div>
-<<<<<<< HEAD
-
-        <div class="page" v-show="activeTab === 'Websites'">
-          <WebsiteManager />
-        </div>
-
-        <!-- Correctly bounds state variables onto the standalone view layer components -->
-        <div class="page" v-show="activeTab === 'TargetGlobe'">
-          <div class="fullscreen-globe-wrapper">
-            <Globe />
-          </div>
-        </div>
-
-=======
->>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
       </div>
     </main>
   </div>
@@ -211,11 +180,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-<<<<<<< HEAD
-  width: 380px; 
-=======
   width: 480px;
->>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
   flex-shrink: 0;
   gap: 20px;
 }
@@ -269,10 +234,6 @@ body {
   border-radius: 8px;
 }
 
-.fullscreen-globe-wrapper :deep(.canvas-viewport) {
-  height: 650px !important; 
-  background: radial-gradient(circle at center, #111126 0%, #050512 100%) !important;
-}
 
 @keyframes fade {
   from {
