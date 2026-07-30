@@ -1,10 +1,13 @@
 <script setup>
 import { ref, provide } from 'vue'
+<<<<<<< HEAD
 import MainControls from './components/MainControls.vue'
 import WebsiteManager from './components/WebsiteManager.vue'
 import Globe from './components/Globe.vue'
 
 const activeTab = ref('Dashboard')
+=======
+>>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
 
 const globalStats = ref({
   top_categories: []
@@ -29,20 +32,37 @@ const sourcesList = ref([
   },
   {
     id: 3,
+<<<<<<< HEAD
     name: 'BBC',
     url: 'https://bbci.co.uk',
     category: 'World',
+=======
+    name: 'SABC News',
+    url: 'https://www.sabcnews.com/sabcnews/feed/',
+    category: 'Local',
+>>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
     lastScrape: 'Never Scraped',
     isActive: true
   }
 ])
 
 const globalArticles = ref([])
+const selectedSourceName = ref('')
+
+function setSelectedSourceName(sourceName) {
+  selectedSourceName.value = sourceName || ''
+}
+
+function clearSelectedSourceName() {
+  selectedSourceName.value = ''
+}
 
 provide('globalSources', sourcesList)
 provide('globalArticles', globalArticles)
-provide('activeTab', activeTab)
 provide('globalStats', globalStats)
+provide('selectedSourceName', selectedSourceName)
+provide('setSelectedSourceName', setSelectedSourceName)
+provide('clearSelectedSourceName', clearSelectedSourceName)
 </script>
 
 <template>
@@ -55,18 +75,15 @@ provide('globalStats', globalStats)
         </div>
 
         <nav class="nav">
-          <button
-            :class="{ active: activeTab === 'Dashboard' }"
-            @click="activeTab = 'Dashboard'"
-          >
+          <RouterLink to="/" class="nav-link" active-class="active" exact-active-class="active">
+            <span class="nav-icon" aria-hidden="true"></span>
             Dashboard
-          </button>
+          </RouterLink>
 
-          <button
-            :class="{ active: activeTab === 'Websites' }"
-            @click="activeTab = 'Websites'"
-          >
+          <RouterLink to="/websites" class="nav-link" active-class="active">
+            <span class="nav-icon" aria-hidden="true"></span>
             Websites
+<<<<<<< HEAD
           </button>
 
           <button
@@ -75,16 +92,24 @@ provide('globalStats', globalStats)
           >
             Target Globe
           </button>
+=======
+          </RouterLink>
+
+          <RouterLink to="/global-map" class="nav-link" active-class="active">
+            <span class="nav-icon" aria-hidden="true"></span>
+            Global Map
+          </RouterLink>
+>>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
         </nav>
       </div>
     </header>
 
     <main class="main">
       <div class="container">
-
-        <div class="page" v-show="activeTab === 'Dashboard'">
-          <MainControls />
+        <div class="page">
+          <RouterView />
         </div>
+<<<<<<< HEAD
 
         <div class="page" v-show="activeTab === 'Websites'">
           <WebsiteManager />
@@ -97,6 +122,8 @@ provide('globalStats', globalStats)
           </div>
         </div>
 
+=======
+>>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
       </div>
     </main>
   </div>
@@ -184,15 +211,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+<<<<<<< HEAD
   width: 380px; 
+=======
+  width: 480px;
+>>>>>>> 79f50824fc0d7876796b89d0944b4fcdee71c365
   flex-shrink: 0;
-  gap: 32px;
+  gap: 20px;
 }
 
-.nav button {
-  background: none;
-  border: none;
-  cursor: pointer;
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-muted);
@@ -201,10 +233,18 @@ body {
   transition: .2s;
 }
 
-.nav button.active {
+.nav-link.active {
   color: var(--primary);
   font-weight: 600;
   border-bottom: 2px solid var(--primary);
+}
+
+.nav-icon {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.65;
 }
 
 .main {
