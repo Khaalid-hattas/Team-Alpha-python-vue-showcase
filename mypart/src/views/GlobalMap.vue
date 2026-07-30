@@ -1,126 +1,142 @@
 <script setup>
-import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
-import Globe from '../components/global-map/Globe.vue'
-import Legend from '../components/global-map/Legend.vue'
-import StatisticsCards from '../components/global-map/StatisticsCards.vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue";
+import Globe from "../components/global-map/Globe.vue";
+import Legend from "../components/global-map/Legend.vue";
+import StatisticsCards from "../components/global-map/StatisticsCards.vue";
 
-const selectedSourceName = inject('selectedSourceName', ref(''))
-const setSelectedSourceName = inject('setSelectedSourceName', () => {})
-const clearSelectedSourceName = inject('clearSelectedSourceName', () => {})
+const selectedSourceName = inject("selectedSourceName", ref(""));
+const setSelectedSourceName = inject("setSelectedSourceName", () => {});
+const clearSelectedSourceName = inject("clearSelectedSourceName", () => {});
 
 const statistics = ref({
+  running: false,
+  interval_minutes: 0,
+  stored_articles: 0,
   source_health: [],
   last_refresh: null,
   last_duration_seconds: null,
-})
-const loading = ref(false)
-const errorMessage = ref('')
+});
+const loading = ref(false);
+const errorMessage = ref("");
 
 const fallbackNodes = [
   {
-    source_name: 'EWN',
-    display_name: 'EWN News',
-    city: 'Johannesburg',
-    country: 'South Africa',
+    source_name: "EWN",
+    display_name: "EWN News",
+    city: "Johannesburg",
+    country: "South Africa",
     lat: -26.2041,
     lng: 28.0473,
     success_rate: 0,
-    last_status: 'unknown',
-    status: 'red',
+    last_status: "unknown",
+    status: "red",
   },
   {
-    source_name: 'News24',
-    display_name: 'News24',
-    city: 'Cape Town',
-    country: 'South Africa',
+    source_name: "News24",
+    display_name: "News24",
+    city: "Cape Town",
+    country: "South Africa",
     lat: -33.9249,
     lng: 18.4241,
     success_rate: 0,
-    last_status: 'unknown',
-    status: 'red',
+    last_status: "unknown",
+    status: "red",
   },
   {
-    source_name: 'SABC News',
-    display_name: 'SABC News',
-    city: 'Johannesburg',
-    country: 'South Africa',
+    source_name: "SABC News",
+    display_name: "SABC News",
+    city: "Johannesburg",
+    country: "South Africa",
     lat: -26.2041,
     lng: 28.0473,
     success_rate: 0,
-    last_status: 'unknown',
-    status: 'red',
+    last_status: "unknown",
+    status: "red",
   },
-]
+];
 
-const sourceHealth = computed(() => statistics.value.source_health || [])
+const sourceHealth = computed(() => statistics.value.source_health || []);
 
 const nodes = computed(() => {
   const bySource = new Map(
-    sourceHealth.value.map(item => [item.source_name, item])
-  )
+    sourceHealth.value.map((item) => [item.source_name, item]),
+  );
 
-  return fallbackNodes.map(node => {
-    const live = bySource.get(node.source_name)
+  return fallbackNodes.map((node) => {
+    const live = bySource.get(node.source_name);
 
     if (!live) {
-      return node
+      return node;
     }
 
     return {
       ...node,
       ...live,
-    }
-  })
-})
+    };
+  });
+});
 
 const averageSuccessRate = computed(() => {
   if (sourceHealth.value.length === 0) {
-    return 0
+    return 0;
   }
 
-  const total = sourceHealth.value.reduce((sum, item) => sum + (item.success_rate || 0), 0)
-  return Math.round(total / sourceHealth.value.length)
-})
+  const total = sourceHealth.value.reduce(
+    (sum, item) => sum + (item.success_rate || 0),
+    0,
+  );
+  return Math.round(total / sourceHealth.value.length);
+});
 
 async function loadStatistics() {
-  loading.value = true
-  errorMessage.value = ''
+  loading.value = true;
+  errorMessage.value = "";
 
   try {
-    const response = await fetch('/api/statistics')
+    const response = await fetch("/api/statistics");
     if (!response.ok) {
-      throw new Error(`Statistics request failed with ${response.status}`)
+      throw new Error(`Statistics request failed with ${response.status}`);
     }
 
-    statistics.value = await response.json()
+    const data = await response.json();
+
+    statistics.value = {
+      running: data.running ?? false,
+      interval_minutes: data.interval_minutes ?? 0,
+      stored_articles: data.stored_articles ?? 0,
+      source_health: data.source_health ?? [],
+      last_refresh: data.last_refresh ?? null,
+      last_duration_seconds: data.last_duration_seconds ?? null,
+    };
   } catch (error) {
-    errorMessage.value = 'Live API statistics are unavailable. The globe is using fallback source positions.'
-    console.error(error)
+    errorMessage.value =
+      "Live API statistics are unavailable. The globe is using fallback source positions.";
+    console.error(error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function handleSelectSource(node) {
-  setSelectedSourceName(node.source_name)
+  setSelectedSourceName(node.source_name);
 }
 
 function handleClearSelection() {
-  clearSelectedSourceName()
+  clearSelectedSourceName();
 }
 
-let refreshTimer
+let refreshTimer;
 
 onMounted(() => {
-  loadStatistics()
-  refreshTimer = window.setInterval(loadStatistics, 30000)
-})
+  loadStatistics();
+  refreshTimer = window.setInterval(loadStatistics, 30000);
+});
 
 onBeforeUnmount(() => {
   if (refreshTimer) {
-    window.clearInterval(refreshTimer)
+    window.clearInterval(refreshTimer);
   }
-})
+});
 </script>
 
 <template>
@@ -129,12 +145,27 @@ onBeforeUnmount(() => {
       <div>
         <p class="breadcrumb">Dashboard / Global Map</p>
         <h1>Global Map</h1>
-        <p class="subtitle">Interactive 3D target globe showing where EWN News, News24, and SABC News operate.</p>
+        <p class="subtitle">
+          Interactive 3D target globe showing where EWN News, News24, and SABC
+          News operate.
+        </p>
       </div>
 
       <div class="header-actions">
-        <span class="refresh-state" :class="{ loading }">
-          {{ loading ? 'Refreshing live stats...' : 'Live stats connected' }}
+        <span
+          class="refresh-state"
+          :class="{
+            loading,
+            offline: !loading && !statistics.running,
+          }"
+        >
+          {{
+            loading
+              ? "Refreshing live stats..."
+              : statistics.running
+                ? "Live stats connected"
+                : "Scheduler offline"
+          }}
         </span>
 
         <button
@@ -147,17 +178,12 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <div
-      v-if="selectedSourceName"
-      class="selection-banner"
-    >
-      Dashboard table is filtered by <strong>{{ selectedSourceName }}</strong>. Click another node or clear the filter to reset.
+    <div v-if="selectedSourceName" class="selection-banner">
+      Dashboard table is filtered by <strong>{{ selectedSourceName }}</strong
+      >. Click another node or clear the filter to reset.
     </div>
 
-    <div
-      v-if="errorMessage"
-      class="error-banner"
-    >
+    <div v-if="errorMessage" class="error-banner">
       {{ errorMessage }}
     </div>
 
@@ -231,6 +257,12 @@ onBeforeUnmount(() => {
   color: var(--primary);
   background: #e8f0fe;
   border-color: #d2e3fc;
+}
+
+.refresh-state.offline {
+  color: #b3261e;
+  background: #fce8e6;
+  border-color: #fbc4c4;
 }
 
 .header-btn {
