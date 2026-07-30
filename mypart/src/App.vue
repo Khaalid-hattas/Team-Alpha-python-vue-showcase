@@ -2,6 +2,7 @@
 import { ref, provide } from 'vue'
 import MainControls from './components/MainControls.vue'
 import WebsiteManager from './components/WebsiteManager.vue'
+import Globe from './components/Globe.vue'
 
 const activeTab = ref('Dashboard')
 
@@ -9,7 +10,6 @@ const globalStats = ref({
   top_categories: []
 })
 
-// RSS feed sources
 const sourcesList = ref([
   {
     id: 1,
@@ -30,7 +30,7 @@ const sourcesList = ref([
   {
     id: 3,
     name: 'BBC',
-    url: 'https://feeds.bbci.co.uk/news/rss.xml',
+    url: 'https://bbci.co.uk',
     category: 'World',
     lastScrape: 'Never Scraped',
     isActive: true
@@ -68,6 +68,13 @@ provide('globalStats', globalStats)
           >
             Websites
           </button>
+
+          <button
+            :class="{ active: activeTab === 'TargetGlobe' }"
+            @click="activeTab = 'TargetGlobe'"
+          >
+            Target Globe
+          </button>
         </nav>
       </div>
     </header>
@@ -83,13 +90,20 @@ provide('globalStats', globalStats)
           <WebsiteManager />
         </div>
 
+        <!-- Correctly bounds state variables onto the standalone view layer components -->
+        <div class="page" v-show="activeTab === 'TargetGlobe'">
+          <div class="fullscreen-globe-wrapper">
+            <Globe />
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
 </template>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://googleapis.com');
 
 :root {
   --navy: #212161;
@@ -170,7 +184,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  width: 220px;
+  width: 380px; 
   flex-shrink: 0;
   gap: 32px;
 }
@@ -213,6 +227,11 @@ body {
   background: white;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.fullscreen-globe-wrapper :deep(.canvas-viewport) {
+  height: 650px !important; 
+  background: radial-gradient(circle at center, #111126 0%, #050512 100%) !important;
 }
 
 @keyframes fade {

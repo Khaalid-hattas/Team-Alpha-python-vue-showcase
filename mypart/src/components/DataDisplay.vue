@@ -1,24 +1,5 @@
 <script setup>
 import { computed } from 'vue'
-import { Bar } from 'vue-chartjs'
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale
-} from 'chart.js'
-
-ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale
-)
 
 const props = defineProps({
   stats: {
@@ -30,76 +11,21 @@ const props = defineProps({
 })
 
 const categories = computed(() => props.stats?.top_categories ?? [])
-
-const chartData = computed(() => ({
-  labels: categories.value.map(item => item.name),
-  datasets: [
-    {
-      label: 'Articles',
-      data: categories.value.map(item => item.count),
-      backgroundColor: '#1b1464',
-      borderColor: '#130d43',
-      borderWidth: 1,
-      borderRadius: 4
-    }
-  ]
-}))
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false
-    },
-    tooltip: {
-      backgroundColor: '#202124',
-      titleFont: {
-        family: 'Inter'
-      },
-      bodyFont: {
-        family: 'Inter'
-      }
-    }
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      grid: {
-        color: '#dadce0'
-      },
-      ticks: {
-        font: {
-          family: 'Inter'
-        }
-      }
-    },
-    x: {
-      grid: {
-        display: false
-      },
-      ticks: {
-        font: {
-          family: 'Inter'
-        }
-      }
-    }
-  }
-}
 </script>
 
 <template>
   <div class="charts-row">
-    <div class="card chart-card">
+    <!-- Left Empty Space Holder for Layout Consistency -->
+    <div class="card chart-card empty-card-mesh">
       <div class="card-header-inline">
-        <h3>Articles by Category</h3>
+        <h3>System Metrics Panel</h3>
       </div>
-
-      <div class="chart-wrapper">
-        <Bar :data="chartData" :options="chartOptions" />
+      <div class="empty-msg-box">
+        Analytics distribution tracking active. Scrape details logged below.
       </div>
     </div>
 
+    <!-- Analytics Breakdown Metrics Data Table -->
     <div class="card table-card">
       <div class="card-header-inline">
         <h3>Top Categories Metrics</h3>
@@ -167,10 +93,12 @@ const chartOptions = {
   color: var(--text);
 }
 
-.chart-wrapper {
-  padding: 24px;
-  height: 280px;
-  position: relative;
+.empty-msg-box {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: auto;
 }
 
 .table-container {
