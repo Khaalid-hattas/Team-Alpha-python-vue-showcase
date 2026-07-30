@@ -97,37 +97,41 @@ async function handleScrape() {
   loading.value = true
   globalArticles.value = []
 
-  const timestamp = new Date().toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-    for (const source of globalSources.value.filter(s => s.isActive)) {
-    try {
-      const items = await fetchRSS(source.url)
+  try {
+    // Step 1: Trigger backend scraper
+    const scrapeResponse = await fetch('http://127.0.0.1:5000/api/scrape')
 
-      items.slice(0, 15).forEach((item, index) => {
-        globalArticles.value.push({
-          id: `${source.id}-${index}-${Date.now()}`,
-          title: item.title,
-          link: item.link,
-          description:
-            (item.description || '')
-              .replace(/<[^>]*>/g, '')
-              .substring(0, 200) + '...',
-          sourceName: source.name,
-          category: source.category
-        })
-      })
-
-      source.lastScrape = `Success: ${timestamp}`
-    } catch (error) {
-      console.error(error)
-      source.lastScrape = 'Failed'
+    if (!scrapeResponse.ok) {
+      throw new Error('Failed to start scraper')
     }
-  }
 
-  loading.value = false
-}
+    await scrapeResponse.json()
+
+    // Step 2: Get scraped articles
+    const itemsResponse = await fetch('http://127.0.0.1:5000/api/items')
+
+    if (!itemsResponse.ok) {
+      throw new Error('Failed to fetch articles')
+    }
+
+    const data = await itemsResponse.json()
+
+    globalArticles.value = data.items.map((article, index) => ({
+      id: index,
+      title: article.title,
+      link: article.url,
+      description: article.description || article.summary || '',
+      sourceName: article.source,
+      category: article.category
+    }))
+
+  } catch (error) {
+    console.error(error)
+    alert('Failed to load articles from backend.')
+  } finally {
+    loading.value = false
+  }
+} //New line added to handleScrape function
 </script>
 
 <template>
