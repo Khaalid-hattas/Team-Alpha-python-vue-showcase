@@ -17,6 +17,8 @@ const filters = [
 
 const globalSources = inject('globalSources')
 const globalArticles = inject('globalArticles')
+const selectedSourceName = inject('selectedSourceName', ref(''))
+const clearSelectedSourceName = inject('clearSelectedSourceName', () => {})
 
 const globalStats = computed(() => {
   const counts = {}
@@ -71,6 +73,12 @@ async function fetchRSS(url) {
 
 const filteredArticles = computed(() => {
   let articles = globalArticles.value
+
+  if (selectedSourceName.value) {
+    articles = articles.filter(
+      article => article.sourceName === selectedSourceName.value
+    )
+  }
 
   if (activeFilter.value !== 'All') {
     articles = articles.filter(
@@ -171,6 +179,23 @@ async function handleScrape() {
     <DataDisplay :stats="globalStats" />
 
     <div class="card filter-card">
+      <div
+        v-if="selectedSourceName"
+        class="selection-banner"
+      >
+        <div>
+          <strong>Map filter active:</strong>
+          <span>{{ selectedSourceName }}</span>
+        </div>
+
+        <button
+          class="clear-filter-btn"
+          @click="clearSelectedSourceName()"
+        >
+          Show all sources
+        </button>
+      </div>
+
       <div class="search-row">
         <input
           v-model="query"
@@ -202,7 +227,7 @@ async function handleScrape() {
       </div>
 
       <div class="articles">
-                <a
+        <a
           v-for="article in filteredArticles"
           :key="article.id"
           :href="article.link"
@@ -297,6 +322,44 @@ async function handleScrape() {
 
 .filter-card {
   padding: 20px 24px;
+}
+
+.selection-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #eef4ff;
+  border: 1px solid #d6e4ff;
+  color: var(--text);
+}
+
+.selection-banner strong {
+  margin-right: 6px;
+}
+
+.selection-banner span {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.clear-filter-btn {
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.clear-filter-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .search-row {

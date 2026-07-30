@@ -1,9 +1,7 @@
 <script setup>
-import TheWelcome from '../components/TheWelcome.vue'
+import MainControls from '../components/MainControls.vue'
 </script>
 
 <template>
-  <main>
-    <TheWelcome />
-  </main>
+  <MainControls />
 </template>
