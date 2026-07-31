@@ -42,6 +42,57 @@ SCRAPER_REGISTRY: dict[str, ScraperCallable] = {
     "sabc_sport": _wrap_topic_scrape(sabc_scraper.scrape, "sport"),
 }
 
+SOURCE_METADATA: dict[str, dict[str, object]] = {
+    "EWN": {
+        "display_name": "EWN News",
+        "city": "Johannesburg",
+        "country": "South Africa",
+        "lat": -26.2041,
+        "lng": 28.0473,
+    },
+    "News24": {
+        "display_name": "News24",
+        "city": "Cape Town",
+        "country": "South Africa",
+        "lat": -33.9249,
+        "lng": 18.4241,
+    },
+    "SABC News": {
+        "display_name": "SABC News",
+        "city": "Johannesburg",
+        "country": "South Africa",
+        "lat": -26.2041,
+        "lng": 28.0473,
+    },
+}
+
+SCRAPER_SOURCE_MAP: dict[str, str] = {
+    "ewn_latest": "EWN",
+    "ewn_local": "EWN",
+    "ewn_politics": "EWN",
+    "ewn_world": "EWN",
+    "news24_latest": "News24",
+    "news24_business": "News24",
+    "news24_sport": "News24",
+    "news24_investigations": "News24",
+    "sabc_top": "SABC News",
+    "sabc_opinion": "SABC News",
+    "sabc_sport": "SABC News",
+}
+
+_source_health_state: dict[str, dict[str, object]] = {
+    source_name: {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0,
+        "last_status": "unknown",
+        "last_run_at": None,
+        "last_duration_seconds": None,
+        "last_articles": 0,
+    }
+    for source_name in SOURCE_METADATA
+}
+
 
 scheduler = BackgroundScheduler(timezone="UTC")
 _last_refresh_at: Optional[str] = None
@@ -61,6 +112,7 @@ def scrape_all_sources(force_full: bool = False) -> dict:
     all_normalized: list[dict] = []
 
     for name, scraper_runner in SCRAPER_REGISTRY.items():
+        source_name = SCRAPER_SOURCE_MAP.get(name, name)
         scraper_start = time.perf_counter()
         logger.info("Scraper started: %s", name)
         try:
@@ -80,9 +132,21 @@ def scrape_all_sources(force_full: bool = False) -> dict:
                 len(normalized),
                 time.perf_counter() - scraper_start,
             )
+            _record_source_health(
+                source_name=source_name,
+                success=True,
+                duration_seconds=time.perf_counter() - scraper_start,
+                article_count=len(normalized),
+            )
         except Exception as exc:  # pragma: no cover
             total_errors += 1
             logger.exception("Scraper failed: %s error=%s", name, exc)
+            _record_source_health(
+                source_name=source_name,
+                success=False,
+                duration_seconds=time.perf_counter() - scraper_start,
+                article_count=0,
+            )
 
     save_result = save_items(all_normalized)
 
@@ -116,6 +180,39 @@ def _safe_scheduled_refresh() -> None:
         logger.exception("Scheduled refresh failed: %s", exc)
 
 
+def _record_source_health(
+    *,
+    source_name: str,
+    success: bool,
+    duration_seconds: float,
+    article_count: int,
+) -> None:
+    state = _source_health_state.setdefault(
+        source_name,
+        {
+            "attempts": 0,
+            "successes": 0,
+            "failures": 0,
+            "last_status": "unknown",
+            "last_run_at": None,
+            "last_duration_seconds": None,
+            "last_articles": 0,
+        },
+    )
+
+    state["attempts"] = int(state["attempts"]) + 1
+    if success:
+        state["successes"] = int(state["successes"]) + 1
+        state["last_status"] = "success"
+    else:
+        state["failures"] = int(state["failures"]) + 1
+        state["last_status"] = "failed"
+
+    state["last_run_at"] = datetime.now(timezone.utc).isoformat()
+    state["last_duration_seconds"] = round(duration_seconds, 3)
+    state["last_articles"] = article_count
+
+
 def start_scheduler() -> None:
     """Start APScheduler periodic refresh job."""
     if scheduler.running:
@@ -136,6 +233,34 @@ def start_scheduler() -> None:
 
 def get_scheduler_status() -> dict:
     """Return scheduler and scraper runtime status."""
+    source_health = []
+
+    for source_name, metadata in SOURCE_METADATA.items():
+        state = _source_health_state.get(source_name, {})
+        attempts = int(state.get("attempts", 0) or 0)
+        successes = int(state.get("successes", 0) or 0)
+        success_rate = round((successes / attempts) * 100, 2) if attempts else 0.0
+
+        source_health.append(
+            {
+                "source_name": source_name,
+                "display_name": metadata["display_name"],
+                "city": metadata["city"],
+                "country": metadata["country"],
+                "lat": metadata["lat"],
+                "lng": metadata["lng"],
+                "attempts": attempts,
+                "successes": successes,
+                "failures": int(state.get("failures", 0) or 0),
+                "success_rate": success_rate,
+                "last_status": state.get("last_status", "unknown"),
+                "last_run_at": state.get("last_run_at"),
+                "last_duration_seconds": state.get("last_duration_seconds"),
+                "last_articles": int(state.get("last_articles", 0) or 0),
+                "status": "green" if success_rate >= 80 else "red",
+            }
+        )
+
     return {
         "running": scheduler.state == STATE_RUNNING,
         "interval_minutes": REFRESH_INTERVAL_MINUTES,
@@ -143,4 +268,5 @@ def get_scheduler_status() -> dict:
         "last_duration_seconds": _last_duration_seconds,
         "stored_articles": get_article_count(),
         "sources_registered": sorted(SCRAPER_REGISTRY.keys()),
+        "source_health": source_health,
     }
