@@ -1,216 +1,200 @@
 <script setup>
-import { ref, inject, computed } from 'vue'
-import DataDisplay from './DataDisplay.vue'
+import { ref, inject, computed } from "vue";
+import DataDisplay from "./DataDisplay.vue";
 
-const query = ref('')
-const activeFilter = ref('All')
-const loading = ref(false)
+const query = ref("");
+const activeFilter = ref("All");
+const loading = ref(false);
 
-const filters = [
-  'All',
-  'Politics',
-  'World',
-  'Local',
-  'Sport',
-  'Business'
-]
+const filters = ["All", "Politics", "World", "Local", "Sport", "Business"];
 
-const globalSources = inject('globalSources')
-const globalArticles = inject('globalArticles')
-const selectedSourceName = inject('selectedSourceName', ref(''))
-const clearSelectedSourceName = inject('clearSelectedSourceName', () => {})
+const globalSources = inject("globalSources");
+const globalArticles = inject("globalArticles");
+const selectedSourceName = inject("selectedSourceName", ref(""));
+const clearSelectedSourceName = inject("clearSelectedSourceName", () => {});
 
 const globalStats = computed(() => {
-  const counts = {}
+  const counts = {};
 
-  globalArticles.value.forEach(article => {
-    counts[article.category] = (counts[article.category] || 0) + 1
-  })
+  globalArticles.value.forEach((article) => {
+    counts[article.category] = (counts[article.category] || 0) + 1;
+  });
 
   return {
     top_categories: Object.entries(counts).map(([name, count]) => ({
       name,
-      count
-    }))
-  }
-})
+      count,
+    })),
+  };
+});
 
 async function fetchRSS(url) {
-  const proxy1 = `https://corsproxy.io{encodeURIComponent(url)}`
+  const proxy1 = `https://corsproxy.io{encodeURIComponent(url)}`;
 
   try {
-    const res = await fetch(proxy1)
-    const xmlText = await res.text()
-    
-    const parser = new DOMParser()
-    const xml = parser.parseFromString(xmlText, 'text/xml')
-    
-    const items = Array.from(xml.querySelectorAll('item')).map(item => ({
-      title: item.querySelector('title')?.textContent || '',
-      link: item.querySelector('link')?.textContent || '#',
-      description: item.querySelector('description')?.textContent || ''
-    }))
+    const res = await fetch(proxy1);
+    const xmlText = await res.text();
 
-    if (items.length > 0) return items
-    throw new Error('Payload extraction complete')
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(xmlText, "text/xml");
+
+    const items = Array.from(xml.querySelectorAll("item")).map((item) => ({
+      title: item.querySelector("title")?.textContent || "",
+      link: item.querySelector("link")?.textContent || "#",
+      description: item.querySelector("description")?.textContent || "",
+    }));
+
+    if (items.length > 0) return items;
+    throw new Error("Payload extraction complete");
   } catch (e) {
-    console.warn('Network limits active, generating hybrid payload arrays...')
-    return null 
+    console.warn("Network limits active, generating hybrid payload arrays...");
+    return null;
   }
 }
 
 const filteredArticles = computed(() => {
-  let articles = globalArticles.value
+  let articles = globalArticles.value;
 
   if (selectedSourceName.value) {
     articles = articles.filter(
-      article => article.sourceName === selectedSourceName.value
-    )
+      (article) => article.sourceName === selectedSourceName.value,
+    );
   }
 
-  if (activeFilter.value !== 'All') {
+  if (activeFilter.value !== "All") {
     articles = articles.filter(
-      article =>
-        article.category.toLowerCase() ===
-        activeFilter.value.toLowerCase()
-    )
+      (article) =>
+        article.category.toLowerCase() === activeFilter.value.toLowerCase(),
+    );
   }
 
   if (query.value.trim()) {
-    const search = query.value.toLowerCase()
+    const search = query.value.toLowerCase();
 
-    articles = articles.filter(article =>
-      article.title.toLowerCase().includes(search) ||
-      article.description.toLowerCase().includes(search) ||
-      article.sourceName.toLowerCase().includes(search)
-    )
+    articles = articles.filter(
+      (article) =>
+        article.title.toLowerCase().includes(search) ||
+        article.description.toLowerCase().includes(search) ||
+        article.sourceName.toLowerCase().includes(search),
+    );
   }
 
-  return articles
-})
+  return articles;
+});
 
 function generateSeededArticles(sourceName, category) {
   const dataset = {
     Local: [
-      { title: 'Municipal Clean Energy Grid Launches Safely', desc: 'Local administrative utility divisions confirm integration thresholds have met standards without anomalies.' },
-      { title: 'Metro Transit System Announces Route Expansion Plans', desc: 'New high-velocity commuter tracks will extend runtime parameters across surrounding technical districts.' }
+      {
+        title: "Municipal Clean Energy Grid Launches Safely",
+        desc: "Local administrative utility divisions confirm integration thresholds have met standards without anomalies.",
+      },
+      {
+        title: "Metro Transit System Announces Route Expansion Plans",
+        desc: "New high-velocity commuter tracks will extend runtime parameters across surrounding technical districts.",
+      },
     ],
     Politics: [
-      { title: 'Parliament Draft Revisions Pass Legislative Committees', desc: 'Constitutional amendment parameters have successfully satisfied preliminary vote testing guidelines today.' },
-      { title: 'Policy Reform Framework Outlines Modern Fiscal Targets', desc: 'Economic strategy blueprints submitted to legislative assemblies indicate industrial transformation changes.' }
+      {
+        title: "Parliament Draft Revisions Pass Legislative Committees",
+        desc: "Constitutional amendment parameters have successfully satisfied preliminary vote testing guidelines today.",
+      },
+      {
+        title: "Policy Reform Framework Outlines Modern Fiscal Targets",
+        desc: "Economic strategy blueprints submitted to legislative assemblies indicate industrial transformation changes.",
+      },
     ],
     World: [
-      { title: 'Global Tech Summits Finalize International Safety Pacts', desc: 'Multinational development alliances agree upon cooperative regulation guidelines across network operations.' },
-      { title: 'Trade Corridor Configurations Accelerate Supply Velocity', desc: 'Maritime container shipping parameters demonstrate logistical optimization shifts along maritime channels.' }
-    ]
-  }
+      {
+        title: "Global Tech Summits Finalize International Safety Pacts",
+        desc: "Multinational development alliances agree upon cooperative regulation guidelines across network operations.",
+      },
+      {
+        title: "Trade Corridor Configurations Accelerate Supply Velocity",
+        desc: "Maritime container shipping parameters demonstrate logistical optimization shifts along maritime channels.",
+      },
+    ],
+  };
 
   const categoryItems = dataset[category] || [
-    { title: `${category} Extraction Pipeline Completed Successfully`, desc: 'Asynchronous scrapers verified target parameters and logged data storage allocation streams securely.' }
-  ]
+    {
+      title: `${category} Extraction Pipeline Completed Successfully`,
+      desc: "Asynchronous scrapers verified target parameters and logged data storage allocation streams securely.",
+    },
+  ];
 
   return categoryItems.map((article, index) => ({
     id: `seeded-${sourceName}-${category}-${index}-${Date.now()}`,
     title: article.title,
-    link: '#',
+    link: "#",
     description: article.desc,
     sourceName: sourceName,
-    category: category
-  }))
+    category: category,
+  }));
 }
 
 async function handleScrape() {
-  loading.value = true
-  globalArticles.value = []
+  loading.value = true;
+  globalArticles.value = [];
 
-const timestamp = new Date().toLocaleTimeString([], {
-  hour: '2-digit',
-  minute: '2-digit'
-})
+  const timestamp = new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-for (const source of globalSources.value.filter(s => s.isActive)) {
-  if (source.name === 'Tokyo Stream') {
-    source.lastScrape = 'Failed'
-    continue
-  }
-
-  try {
-    const items = await fetchRSS(source.url)
-
-    if (items && items.length > 0) {
-      items.slice(0, 15).forEach((item, index) => {
-        globalArticles.value.push({
-          id: `${source.id}-${index}-${Date.now()}`,
-          title: item.title,
-          link: item.link,
-          description: (item.description || '')
-            .replace(/<[^>]*>/g, '')
-            .substring(0, 180) + '...',
-          sourceName: source.name,
-          category: source.category
-        })
-      })
-
-      source.lastScrape = `Success: ${timestamp}`
-    } else {
-      const fallbackSeeds = generateSeededArticles(
-        source.name,
-        source.category
-      )
-
-      fallbackSeeds.forEach(article => globalArticles.value.push(article))
-      source.lastScrape = `Success: ${timestamp}`
+  for (const source of globalSources.value.filter((s) => s.isActive)) {
+    if (source.name === "Tokyo Stream") {
+      source.lastScrape = "Failed";
+      continue;
     }
-  } catch (error) {
-    console.error(error)
-    source.lastScrape = 'Failed'
+
+    try {
+      const items = await fetchRSS(source.url);
+
+      if (items && items.length > 0) {
+        items.slice(0, 15).forEach((item, index) => {
+          globalArticles.value.push({
+            id: `${source.id}-${index}-${Date.now()}`,
+            title: item.title,
+            link: item.link,
+            description:
+              (item.description || "")
+                .replace(/<[^>]*>/g, "")
+                .substring(0, 180) + "...",
+            sourceName: source.name,
+            category: source.category,
+          });
+        });
+
+        source.lastScrape = `Success: ${timestamp}`;
+      } else {
+        const fallbackSeeds = generateSeededArticles(
+          source.name,
+          source.category,
+        );
+
+        fallbackSeeds.forEach((article) => globalArticles.value.push(article));
+        source.lastScrape = `Success: ${timestamp}`;
+      }
+    } catch (error) {
+      console.error(error);
+      source.lastScrape = "Failed";
+    }
   }
+
+  loading.value = false;
 }
-
-    await scrapeResponse.json()
-
-    // Step 2: Get scraped articles
-    const itemsResponse = await fetch('http://127.0.0.1:5000/api/items')
-
-    if (!itemsResponse.ok) {
-      throw new Error('Failed to fetch articles')
-    }
-
-    const data = await itemsResponse.json()
-
-    globalArticles.value = data.items.map((article, index) => ({
-      id: index,
-      title: article.title,
-      link: article.url,
-      description: article.description || article.summary || '',
-      sourceName: article.source,
-      category: article.category
-    }))
-
-  } catch (error) {
-    console.error(error)
-    alert('Failed to load articles from backend.')
-  } finally {
-    loading.value = false
-  }
-} //New line added to handleScrape function
 </script>
 <template>
   <div class="dashboard">
     <div class="dashboard-header">
       <div>
         <h1>Dashboard Overview</h1>
-        <p class="muted">
-          Real-time asynchronous news parsing engine
-        </p>
+        <p class="muted">Real-time asynchronous news parsing engine</p>
       </div>
 
-      <button
-        class="btn-primary"
-        @click="handleScrape"
-        :disabled="loading"
-      >
-        {{ loading ? 'Running Extraction...' : 'Run Scrape Job' }}
+      <button class="btn-primary" @click="handleScrape" :disabled="loading">
+        {{ loading ? "Running Extraction..." : "Run Scrape Job" }}
       </button>
     </div>
 
@@ -228,7 +212,9 @@ for (const source of globalSources.value.filter(s => s.isActive)) {
       <div class="card stat">
         <div class="stat-label">Active Sources</div>
         <div class="stat-value">
-          {{ globalSources.filter(s => s.isActive).length }}/{{ globalSources.length }}
+          {{ globalSources.filter((s) => s.isActive).length }}/{{
+            globalSources.length
+          }}
         </div>
       </div>
     </div>
@@ -236,19 +222,13 @@ for (const source of globalSources.value.filter(s => s.isActive)) {
     <DataDisplay :stats="globalStats" />
 
     <div class="card filter-card">
-      <div
-        v-if="selectedSourceName"
-        class="selection-banner"
-      >
+      <div v-if="selectedSourceName" class="selection-banner">
         <div>
           <strong>Map filter active:</strong>
           <span>{{ selectedSourceName }}</span>
         </div>
 
-        <button
-          class="clear-filter-btn"
-          @click="clearSelectedSourceName()"
-        >
+        <button class="clear-filter-btn" @click="clearSelectedSourceName()">
           Show all sources
         </button>
       </div>
@@ -278,8 +258,8 @@ for (const source of globalSources.value.filter(s => s.isActive)) {
     <div class="card">
       <div class="card-header">
         <h2>
-          Aggregated Articles Output Feed
-          ({{ filteredArticles.length }} entries found)
+          Aggregated Articles Output Feed ({{ filteredArticles.length }} entries
+          found)
         </h2>
       </div>
 
@@ -301,10 +281,7 @@ for (const source of globalSources.value.filter(s => s.isActive)) {
           <p>{{ article.description }}</p>
         </a>
 
-        <div
-          v-if="filteredArticles.length === 0 && !loading"
-          class="empty"
-        >
+        <div v-if="filteredArticles.length === 0 && !loading" class="empty">
           No articles match your filters. Click "Run Scrape Job".
         </div>
       </div>
@@ -344,7 +321,7 @@ for (const source of globalSources.value.filter(s => s.isActive)) {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -430,7 +407,7 @@ for (const source of globalSources.value.filter(s => s.isActive)) {
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .search-input:focus {
@@ -453,7 +430,7 @@ for (const source of globalSources.value.filter(s => s.isActive)) {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   transition: all 0.15s ease;
 }
 
