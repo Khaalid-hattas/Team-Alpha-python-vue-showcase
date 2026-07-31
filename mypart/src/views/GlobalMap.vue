@@ -100,6 +100,9 @@ async function loadStatistics() {
 
     const data = await response.json();
 
+    console.log("API data:", data);
+    console.log("Source health length:", data.source_health?.length);
+
     statistics.value = {
       running: data.running ?? false,
       interval_minutes: data.interval_minutes ?? 0,
@@ -156,15 +159,16 @@ onBeforeUnmount(() => {
           class="refresh-state"
           :class="{
             loading,
+            online: !loading && statistics.running,
             offline: !loading && !statistics.running,
           }"
         >
           {{
             loading
-              ? "Refreshing live stats..."
+              ? "Refreshing..."
               : statistics.running
-                ? "Live stats connected"
-                : "Scheduler offline"
+                ? "Scheduler Running"
+                : "Scheduler Offline"
           }}
         </span>
 
@@ -201,6 +205,11 @@ onBeforeUnmount(() => {
       :average-success-rate="averageSuccessRate"
       :last-refresh="statistics.last_refresh"
       :last-duration-seconds="statistics.last_duration_seconds"
+      :stored-articles="statistics.stored_articles"
+      :total-sources="sourceHealth.length"
+      :active-sources="
+        sourceHealth.filter((s) => s.last_status === 'success').length
+      "
     />
   </section>
 </template>
@@ -253,16 +262,22 @@ onBeforeUnmount(() => {
   padding: 7px 12px;
 }
 
-.refresh-state.loading {
-  color: var(--primary);
-  background: #e8f0fe;
-  border-color: #d2e3fc;
+.refresh-state.online {
+  color: #137333;
+  background: #e6f4ea;
+  border-color: #ceead6;
 }
 
 .refresh-state.offline {
   color: #b3261e;
   background: #fce8e6;
-  border-color: #fbc4c4;
+  border-color: #f4b7b7;
+}
+
+.refresh-state.loading {
+  color: #1a73e8;
+  background: #e8f0fe;
+  border-color: #c7dafd;
 }
 
 .header-btn {

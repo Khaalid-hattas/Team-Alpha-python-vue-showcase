@@ -1,8 +1,8 @@
 <script setup>
-import { computed, inject } from 'vue'
+import { computed, inject } from "vue";
 
-const globalSources = inject('globalSources', { value: [] })
-const globalArticles = inject('globalArticles', { value: [] })
+const globalSources = inject("globalSources", { value: [] });
+const globalArticles = inject("globalArticles", { value: [] });
 
 const props = defineProps({
   sourceHealth: {
@@ -15,26 +15,49 @@ const props = defineProps({
   },
   lastRefresh: {
     type: String,
-    default: '',
+    default: "",
   },
   lastDurationSeconds: {
     type: Number,
     default: 0,
   },
-})
+  storedArticles: {
+    type: Number,
+    default: 0,
+  },
+  totalSources: {
+    type: Number,
+    default: 0,
+  },
+  activeSources: {
+    type: Number,
+    default: 0,
+  },
+});
 
-const activeSources = computed(() => globalSources.value.filter((source) => source.isActive).length)
-const sourceHealth = computed(() => props.sourceHealth ?? [])
-const sourceCoverage = computed(() => {
-  if (globalSources.value.length === 0) {
-    return '0%'
+const sourceHealth = computed(() => props.sourceHealth ?? []);
+
+const totalSuccessRate = computed(() => `${props.averageSuccessRate}%`);
+
+const formattedLastRefresh = computed(() => {
+  if (!props.lastRefresh) {
+    return "Not yet available";
   }
 
-  const ratio = (activeSources.value / globalSources.value.length) * 100
-  return `${Math.round(ratio)}%`
-})
+  return new Date(props.lastRefresh).toLocaleString("en-ZA", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+});
 
-const totalSuccessRate = computed(() => `${props.averageSuccessRate}%`)
+function getStatusLabel(source) {
+  if (source.attempts === 0) return "Waiting";
+  return source.status === "green" ? "Healthy" : "Degraded";
+}
+
+function getProgressWidth(source) {
+  return `${source.success_rate ?? 0}%`;
+}
 </script>
 
 <template>
@@ -42,7 +65,7 @@ const totalSuccessRate = computed(() => `${props.averageSuccessRate}%`)
     <div class="stats-grid">
       <article class="card stat-card">
         <span class="stat-label">Total Sources</span>
-        <strong class="stat-value">{{ globalSources.length }}</strong>
+        <strong class="stat-value">{{ totalSources }}</strong>
       </article>
 
       <article class="card stat-card">
@@ -52,7 +75,7 @@ const totalSuccessRate = computed(() => `${props.averageSuccessRate}%`)
 
       <article class="card stat-card">
         <span class="stat-label">Mapped Articles</span>
-        <strong class="stat-value">{{ globalArticles.length }}</strong>
+        <strong class="stat-value">{{ storedArticles }}</strong>
       </article>
 
       <article class="card stat-card">
@@ -66,8 +89,10 @@ const totalSuccessRate = computed(() => `${props.averageSuccessRate}%`)
         <div>
           <h3>Live source health</h3>
           <p>
-            Last refresh {{ lastRefresh || 'not yet available' }}
-            <span v-if="lastDurationSeconds">· {{ lastDurationSeconds.toFixed(2) }}s</span>
+            Last refresh {{ formattedLastRefresh }}
+            <span v-if="lastDurationSeconds">
+              · {{ lastDurationSeconds.toFixed(2) }}s
+            </span>
           </p>
         </div>
       </div>
@@ -81,20 +106,31 @@ const totalSuccessRate = computed(() => `${props.averageSuccessRate}%`)
         >
           <div class="health-card-head">
             <strong>{{ source.display_name }}</strong>
-            <span class="health-pill">{{ source.success_rate }}%</span>
+            <span class="health-pill"> {{ source.success_rate }}% </span>
+          </div>
+
+          <div class="status-row">
+            <span class="status-badge" :class="source.status">
+              {{ getStatusLabel(source) }}
+            </span>
           </div>
 
           <p>{{ source.city }}, {{ source.country }}</p>
+
+          <div class="progress-track">
+            <div
+              class="progress-fill"
+              :style="{ width: getProgressWidth(source) }"
+            ></div>
+          </div>
+
           <small>
-            {{ source.last_status }} · {{ source.last_articles }} articles · {{ source.attempts }} checks
+            {{ source.last_articles }} articles • {{ source.attempts }} checks
           </small>
         </article>
       </div>
 
-      <p
-        v-if="sourceHealth.length === 0"
-        class="empty-msg"
-      >
+      <p v-if="sourceHealth.length === 0" class="empty-msg">
         No live source statistics available yet.
       </p>
     </div>
@@ -179,6 +215,43 @@ const totalSuccessRate = computed(() => `${props.averageSuccessRate}%`)
 .health-card.red {
   border-color: #f9c5bf;
   background: #fff5f4;
+}
+
+.status-row {
+  margin-bottom: 10px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-badge.green {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.status-badge.red {
+  background: #fce8e6;
+  color: #b3261e;
+}
+
+.progress-track {
+  width: 100%;
+  height: 6px;
+  background: #eceff3;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #34a853;
+  transition: width 0.4s ease;
 }
 
 .health-card-head {
