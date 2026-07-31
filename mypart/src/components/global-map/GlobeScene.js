@@ -176,11 +176,20 @@ export class GlobeScene {
     this.targetNodesData.forEach((node) => {
       const coords = this.calcPosFromLatLon(node.lat, node.lon);
 
+      if (node.id === "EWN") {
+        const direction = coords.clone().normalize();
+        coords.add(direction.multiplyScalar(0.18));
+
+        coords.x -= 0.18;
+        coords.y += 0.12;
+      }
+
       if (node.id === "SABC News") {
         const direction = coords.clone().normalize();
         coords.add(direction.multiplyScalar(0.18));
-        coords.x += 0.12;
-        coords.y += 0.08;
+
+        coords.x += 0.18;
+        coords.y -= 0.12;
       }
       console.log(node.id, coords.x, coords.y, coords.z);
       const targetGroup = new THREE.Group();
@@ -208,7 +217,7 @@ export class GlobeScene {
       targetGroup.add(ringMesh);
 
       const hitbox = new THREE.Mesh(
-        new THREE.SphereGeometry(0.28, 16, 16),
+        new THREE.SphereGeometry(0.4, 16, 16),
         new THREE.MeshBasicMaterial({
           transparent: true,
           opacity: 0,
