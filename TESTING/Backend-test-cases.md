@@ -94,3 +94,60 @@ To run these manual tests locally:
 | **TC-BE-18** | `scraper_helpers.py` | Verify shared helper utilities (e.g., text cleaning/date parsing) behave correctly on edge-case input. | Pass empty strings, `None`, and HTML-laden strings into helper functions. | Functions handle `None`/empty gracefully (no `AttributeError`) and strip HTML/whitespace as intended. |
  
 ---
+
+
+## latest backend testcases 
+
+##  Backend Test Cases
+ 
+Covers `backend/app.py`, `backend/services/storage.py`, `backend/services/scraper_service.py`, and `backend/scrapers/*`.
+ 
+### 1.1 App Bootstrap & Config
+ 
+| ID | Area | Description | Steps | Expected Result |
+|---|---|---|---|---|
+| TC-BE-01 | App startup | Flask app boots without error | Run `python app.py` | Server starts on port `5000` (or `$PORT`), logs "Application bootstrap complete" |
+| TC-BE-02 | CORS | Cross-origin requests from the Vue dev server are allowed | Send request with `Origin: http://localhost:5173` | Response contains `Access-Control-Allow-Origin` header (Flask-CORS enabled globally) |
+| TC-BE-03 | Root route | `GET /` returns welcome payload | `curl http://localhost:5000/` | `200 OK`, JSON `{"message": "Welcome to Team Alpha Backend API"}` |
+| TC-BE-04 | 404 handler | Unknown route returns structured JSON error | `GET /api/not-a-real-route` | `404`, JSON `{"error": "Resource not found"}` |
+| TC-BE-05 | 500 handler | Unhandled exception returns structured JSON error | Force an internal error (e.g. malformed query causing exception) | `500`, JSON `{"error": "..."}` instead of an HTML stack trace |
+| TC-BE-06 | Bootstrap side effects | `init_storage()` and `start_scheduler()` run once on import | Start app, inspect logs / DB file | `articles.db` (or configured store) is initialized; background scheduler is running |
+ 
+### 1.2 Storage Service (`services/storage.py`)
+ 
+| ID | Area | Description | Steps | Expected Result |
+|---|---|---|---|---|
+| TC-BE-07 | `init_storage()` | Creates the articles table if missing | Delete DB file, call `init_storage()` | Table/schema is (re)created without error |
+| TC-BE-08 | `normalize_item()` | Normalizes a raw scraped dict into a consistent article shape | Pass a raw item missing optional fields | Returns dict with consistent keys (title, url, summary/description, source, etc.), no `KeyError` |
+| TC-BE-09 | `save_items()` — new items | Saves a list of normalized items | Call `save_items([...])` with unique URLs | Returns `{"saved": N, "duplicates": 0}`; rows appear in DB |
+| TC-BE-10 | `save_items()` — duplicates | Prevents duplicate rows by URL | Call `save_items()` twice with the same item | Second call reports the item under `duplicates`, not `saved`; DB has no duplicate row |
+| TC-BE-11 | `get_all_urls()` | Returns the full set of stored URLs | Insert 3 known items, call `get_all_urls()` | Returned `set` contains exactly those 3 URLs |
+| TC-BE-12 | `get_articles()` — default | Returns most recent articles up to default limit | Call `get_articles()` with >500 rows in DB | Returns at most 500 items |
+| TC-BE-13 | `get_articles(limit=N)` | Respects a custom limit | Call `get_articles(limit=5)` | Returns exactly 5 items (or fewer if DB has less) |
+| TC-BE-14 | `get_articles(source=X)` | Filters by source | Call `get_articles(source="EWN")` | All returned items have `source == "EWN"` |
+| TC-BE-15 | `get_article_count()` | Returns total stored article count | Insert known count, call function | Returned int matches actual row count |
+ 
+### 1.3 Scraper Service (`services/scraper_service.py`)
+ 
+| ID | Area | Description | Steps | Expected Result |
+|---|---|---|---|---|
+| TC-BE-16 | `SCRAPER_REGISTRY` | All 11 topic scrapers are registered | Inspect `SCRAPER_REGISTRY.keys()` | Contains `ewn_latest, ewn_local, ewn_politics, ewn_world, news24_latest, news24_business, news24_sport, news24_investigations, sabc_top, sabc_opinion, sabc_sport` |
+| TC-BE-17 | `scrape_all_sources()` — incremental | Only scrapes/persists new (unseen) URLs by default | Run with `force_full=False` after articles already stored | `duplicates` count > 0 for items already known; only new URLs added |
+| TC-BE-18 | `scrape_all_sources(force_full=True)` | Ignores the "already seen" URL cache | Run with `force_full=True` | `seen_urls` starts empty; scrape treats all fetched items as candidates for insert |
+| TC-BE-19 | Scraper failure isolation | One failing scraper doesn't stop the others | Mock one scraper (e.g. `sabc_top`) to raise an exception | `errors` count increments by 1; other scrapers still run and their articles are saved; no unhandled exception bubbles up |
+| TC-BE-20 | `_record_source_health()` | Tracks attempts/successes/failures per source | Run scrape with 1 success + 1 failure for the same source | `attempts` increments for both; `successes`/`failures` reflect outcome; `success_rate` recalculated |
+| TC-BE-21 | `get_scheduler_status()` shape | Returns full dashboard/statistics payload | Call function directly | Returns dict with `running`, `interval_minutes`, `last_refresh`, `last_duration_seconds`, `stored_articles`, `sources_registered`, `source_health` (list of 3: EWN, News24, SABC News) |
+| TC-BE-22 | `status` field logic | `source_health[i].status` is "green" only when healthy | Force `success_rate >= 80` vs `< 80` | `status` is `"green"` for ≥80%, `"red"` otherwise |
+| TC-BE-23 | `start_scheduler()` | Background job is scheduled at `REFRESH_INTERVAL_MINUTES` | Start app, inspect `scheduler.state` | `scheduler.state == STATE_RUNNING`; job triggers `_safe_scheduled_refresh()` on interval |
+| TC-BE-24 | `_safe_scheduled_refresh()` | Scheduled refresh never crashes the scheduler | Force `scrape_all_sources()` to raise | Exception is caught/logged; scheduler keeps running for the next interval |
+ 
+### 1.4 Scrapers (`backend/scrapers/*`)
+ 
+| ID | Area | Description | Steps | Expected Result |
+|---|---|---|---|---|
+| TC-BE-25 | EWN scraper | Parses live EWN feed/pages per topic (`latest`, `local`, `politics`, `world`) | Call `ewn_scraper.scrape(seen_urls)` for each topic | Returns list of dicts with non-empty `title` and `url`; already-seen URLs excluded |
+| TC-BE-26 | News24 scraper | Parses live News24 feed/pages per topic | Call `news24_scraper.scrape(seen_urls)` for each topic | Same as above, no duplicate/malformed entries |
+| TC-BE-27 | SABC scraper | Parses live SABC feed/pages per topic | Call `sabc_scraper.scrape(seen_urls)` for each topic | Same as above |
+| TC-BE-28 | Network failure | Scraper handles timeouts / unreachable source gracefully | Point scraper at an invalid/unreachable URL | Raises a handled exception caught by `scrape_all_sources`; does not crash the process |
+| TC-BE-29 | Selector drift | Scraper handles a changed page structure (missing selector) | Feed scraper HTML with target elements removed | Returns empty list or skips the malformed item rather than throwing an unhandled error |
+ 
