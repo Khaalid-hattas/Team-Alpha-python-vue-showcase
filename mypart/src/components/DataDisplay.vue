@@ -1,5 +1,9 @@
 <script setup>
 import { computed } from 'vue'
+import { Bar } from 'vue-chartjs'
+import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const props = defineProps({
   stats: {
@@ -11,17 +15,34 @@ const props = defineProps({
 })
 
 const categories = computed(() => props.stats?.top_categories ?? [])
+
+const chartData = computed(() => ({
+  labels: categories.value.map(c => c.name),
+  datasets: [{
+    label: 'Articles',
+    data: categories.value.map(c => c.count),
+    backgroundColor: '#4285f4'
+  }]
+}))
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } }
+}
 </script>
 
 <template>
   <div class="charts-row">
     <!-- Left Empty Space Holder for Layout Consistency -->
-    <div class="card chart-card empty-card-mesh">
+    <!-- Top Categories Bar Chart -->
+    <div class="card chart-card">
       <div class="card-header-inline">
         <h3>System Metrics Panel</h3>
       </div>
-      <div class="empty-msg-box">
-        Analytics distribution tracking active. Scrape details logged below.
+      <div class="chart-box">
+        <Bar v-if="categories.length" :data="chartData" :options="chartOptions" />
+        <div v-else class="empty-msg-box">No analytics data yet.</div>
       </div>
     </div>
 
@@ -73,6 +94,11 @@ const categories = computed(() => props.stats?.top_categories ?? [])
   display: flex;
   gap: 20px;
   width: 100%;
+}
+
+.chart-box {
+  padding: 20px;
+  height: 280px;
 }
 
 .chart-card,
