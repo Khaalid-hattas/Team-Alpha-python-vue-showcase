@@ -1,6 +1,7 @@
 <script setup>
 import { ref, inject, computed } from "vue";
 import DataDisplay from "./DataDisplay.vue";
+import { runScrape, getItems } from "@/services/api";
 
 const query = ref("");
 const activeFilter = ref("All");
@@ -27,30 +28,6 @@ const globalStats = computed(() => {
     })),
   };
 });
-
-async function fetchRSS(url) {
-  const proxy1 = `https://corsproxy.io{encodeURIComponent(url)}`;
-
-  try {
-    const res = await fetch(proxy1);
-    const xmlText = await res.text();
-
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(xmlText, "text/xml");
-
-    const items = Array.from(xml.querySelectorAll("item")).map((item) => ({
-      title: item.querySelector("title")?.textContent || "",
-      link: item.querySelector("link")?.textContent || "#",
-      description: item.querySelector("description")?.textContent || "",
-    }));
-
-    if (items.length > 0) return items;
-    throw new Error("Payload extraction complete");
-  } catch (e) {
-    console.warn("Network limits active, generating hybrid payload arrays...");
-    return null;
-  }
-}
 
 const filteredArticles = computed(() => {
   let articles = globalArticles.value;
@@ -82,104 +59,41 @@ const filteredArticles = computed(() => {
   return articles;
 });
 
-function generateSeededArticles(sourceName, category) {
-  const dataset = {
-    Local: [
-      {
-        title: "Municipal Clean Energy Grid Launches Safely",
-        desc: "Local administrative utility divisions confirm integration thresholds have met standards without anomalies.",
-      },
-      {
-        title: "Metro Transit System Announces Route Expansion Plans",
-        desc: "New high-velocity commuter tracks will extend runtime parameters across surrounding technical districts.",
-      },
-    ],
-    Politics: [
-      {
-        title: "Parliament Draft Revisions Pass Legislative Committees",
-        desc: "Constitutional amendment parameters have successfully satisfied preliminary vote testing guidelines today.",
-      },
-      {
-        title: "Policy Reform Framework Outlines Modern Fiscal Targets",
-        desc: "Economic strategy blueprints submitted to legislative assemblies indicate industrial transformation changes.",
-      },
-    ],
-    World: [
-      {
-        title: "Global Tech Summits Finalize International Safety Pacts",
-        desc: "Multinational development alliances agree upon cooperative regulation guidelines across network operations.",
-      },
-      {
-        title: "Trade Corridor Configurations Accelerate Supply Velocity",
-        desc: "Maritime container shipping parameters demonstrate logistical optimization shifts along maritime channels.",
-      },
-    ],
-  };
-
-  const categoryItems = dataset[category] || [
-    {
-      title: `${category} Extraction Pipeline Completed Successfully`,
-      desc: "Asynchronous scrapers verified target parameters and logged data storage allocation streams securely.",
-    },
-  ];
-
-  return categoryItems.map((article, index) => ({
-    id: `seeded-${sourceName}-${category}-${index}-${Date.now()}`,
-    title: article.title,
-    link: "#",
-    description: article.desc,
-    sourceName: sourceName,
-    category: category,
-  }));
-}
-
 async function handleScrape() {
   loading.value = true;
-  globalArticles.value = [];
 
   const timestamp = new Date().toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  for (const source of globalSources.value.filter((s) => s.isActive)) {
-    if (source.name === "Tokyo Stream") {
+  const activeSources = globalSources.value.filter((s) => s.isActive);
+
+  try {
+    // Kick off a fresh scrape on the backend, then pull the stored items.
+    await runScrape();
+    const res = await getItems(1);
+    const items = res.data?.items || [];
+
+    globalArticles.value = items.map((item, index) => ({
+      id: `${item.source}-${index}-${item.scraped_at || Date.now()}`,
+      title: item.title,
+      link: item.url || "#",
+      description: (item.description || item.summary || "")
+        .replace(/<[^>]*>/g, "")
+        .substring(0, 180) + "...",
+      sourceName: item.source,
+      category: item.category || "General",
+    }));
+
+    activeSources.forEach((source) => {
+      source.lastScrape = `Success: ${timestamp}`;
+    });
+  } catch (error) {
+    console.error("Scrape failed:", error);
+    activeSources.forEach((source) => {
       source.lastScrape = "Failed";
-      continue;
-    }
-
-    try {
-      const items = await fetchRSS(source.url);
-
-      if (items && items.length > 0) {
-        items.slice(0, 15).forEach((item, index) => {
-          globalArticles.value.push({
-            id: `${source.id}-${index}-${Date.now()}`,
-            title: item.title,
-            link: item.link,
-            description:
-              (item.description || "")
-                .replace(/<[^>]*>/g, "")
-                .substring(0, 180) + "...",
-            sourceName: source.name,
-            category: source.category,
-          });
-        });
-
-        source.lastScrape = `Success: ${timestamp}`;
-      } else {
-        const fallbackSeeds = generateSeededArticles(
-          source.name,
-          source.category,
-        );
-
-        fallbackSeeds.forEach((article) => globalArticles.value.push(article));
-        source.lastScrape = `Success: ${timestamp}`;
-      }
-    } catch (error) {
-      console.error(error);
-      source.lastScrape = "Failed";
-    }
+    });
   }
 
   loading.value = false;

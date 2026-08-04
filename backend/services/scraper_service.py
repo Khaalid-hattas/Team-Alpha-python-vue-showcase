@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import os
 import time
@@ -111,42 +112,49 @@ def scrape_all_sources(force_full: bool = False) -> dict:
     total_errors = 0
     all_normalized: list[dict] = []
 
-    for name, scraper_runner in SCRAPER_REGISTRY.items():
-        source_name = SCRAPER_SOURCE_MAP.get(name, name)
-        scraper_start = time.perf_counter()
-        logger.info("Scraper started: %s", name)
-        try:
-            items = scraper_runner(seen_urls)
-            total_found += len(items)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(SCRAPER_REGISTRY)) as executor:
+        future_to_name = {
+            executor.submit(scraper_runner, seen_urls): name
+            for name, scraper_runner in SCRAPER_REGISTRY.items()
+        }
 
-            normalized = [normalize_item(item) for item in items]
-            normalized = [item for item in normalized if item.get("url")]
+        for future in concurrent.futures.as_completed(future_to_name):
+            name = future_to_name[future]
+            source_name = SCRAPER_SOURCE_MAP.get(name, name)
+            scraper_start = time.perf_counter()
+            logger.info("Scraper started: %s", name)
+            try:
+                items = future.result()
+                total_found += len(items)
 
-            for item in normalized:
-                seen_urls.add(item["url"])
+                normalized = [normalize_item(item) for item in items]
+                normalized = [item for item in normalized if item.get("url")]
 
-            all_normalized.extend(normalized)
-            logger.info(
-                "Scraper finished: %s articles=%s duration=%.2fs",
-                name,
-                len(normalized),
-                time.perf_counter() - scraper_start,
-            )
-            _record_source_health(
-                source_name=source_name,
-                success=True,
-                duration_seconds=time.perf_counter() - scraper_start,
-                article_count=len(normalized),
-            )
-        except Exception as exc:  # pragma: no cover
-            total_errors += 1
-            logger.exception("Scraper failed: %s error=%s", name, exc)
-            _record_source_health(
-                source_name=source_name,
-                success=False,
-                duration_seconds=time.perf_counter() - scraper_start,
-                article_count=0,
-            )
+                for item in normalized:
+                    seen_urls.add(item["url"])
+
+                all_normalized.extend(normalized)
+                logger.info(
+                    "Scraper finished: %s articles=%s duration=%.2fs",
+                    name,
+                    len(normalized),
+                    time.perf_counter() - scraper_start,
+                )
+                _record_source_health(
+                    source_name=source_name,
+                    success=True,
+                    duration_seconds=time.perf_counter() - scraper_start,
+                    article_count=len(normalized),
+                )
+            except Exception as exc:  # pragma: no cover
+                total_errors += 1
+                logger.exception("Scraper failed: %s error=%s", name, exc)
+                _record_source_health(
+                    source_name=source_name,
+                    success=False,
+                    duration_seconds=time.perf_counter() - scraper_start,
+                    article_count=0,
+                )
 
     save_result = save_items(all_normalized)
 
