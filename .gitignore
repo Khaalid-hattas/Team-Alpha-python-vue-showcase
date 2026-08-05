@@ -37,3 +37,10 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+__pycache__/
+*.py[cod]
+venv/
+data/articles.db
+
+
