@@ -68,23 +68,28 @@ async function handleScrape() {
   });
 
   const activeSources = globalSources.value.filter((s) => s.isActive);
+  const activeSourceNames = activeSources.map((s) => s.name);
 
   try {
-    // Kick off a fresh scrape on the backend, then pull the stored items.
+    // The backend always scrapes every source it supports in one go, so we
+    // filter the results down to just the sources the user has added in
+    // the Website Manager tab.
     await runScrape();
     const res = await getItems(1);
     const items = res.data?.items || [];
 
-    globalArticles.value = items.map((item, index) => ({
-      id: `${item.source}-${index}-${item.scraped_at || Date.now()}`,
-      title: item.title,
-      link: item.url || "#",
-      description: (item.description || item.summary || "")
-        .replace(/<[^>]*>/g, "")
-        .substring(0, 180) + "...",
-      sourceName: item.source,
-      category: item.category || "General",
-    }));
+    globalArticles.value = items
+      .filter((item) => activeSourceNames.includes(item.source))
+      .map((item, index) => ({
+        id: `${item.source}-${index}-${item.scraped_at || Date.now()}`,
+        title: item.title,
+        link: item.url || "#",
+        description: (item.description || item.summary || "")
+          .replace(/<[^>]*>/g, "")
+          .substring(0, 180) + "...",
+        sourceName: item.source,
+        category: item.category || "General",
+      }));
 
     activeSources.forEach((source) => {
       source.lastScrape = `Success: ${timestamp}`;

@@ -1,44 +1,15 @@
 <script setup>
 import { ref, provide } from 'vue'
+import { SUPPORTED_SOURCES } from './constants/sources'
 
 const globalStats = ref({
   top_categories: []
 })
 
-const sourcesList = ref([
-  {
-    id: 1,
-    name: 'EWN',
-    url: 'https://ewn.co.za/rss',
-    category: 'Local',
-    lastScrape: 'Never Scraped',
-    isActive: true
-  },
-  {
-    id: 2,
-    name: 'News24',
-    url: 'https://www.news24.com/rss/news24/topstories',
-    category: 'Politics',
-    lastScrape: 'Never Scraped',
-    isActive: true
-  },
-  {
-  id: 3,
-  name: 'BBC',
-  url: 'https://bbci.co.uk',
-  category: 'World',
-  lastScrape: 'Never Scraped',
-  isActive: true
-},
-{
-  id: 4,
-  name: 'SABC News',
-  url: 'https://www.sabcnews.com/sabcnews/feed/',
-  category: 'Local',
-  lastScrape: 'Never Scraped',
-  isActive: true
-}
-])
+// Sources start empty — the user picks from the dropdown in AddSiteForm
+// to add the supported source. Once added, it's marked active and locked
+// (non-removable) since it's the app's only supported source.
+const sourcesList = ref([])
 
 const globalArticles = ref([])
 const selectedSourceName = ref('')
