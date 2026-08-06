@@ -68,23 +68,28 @@ async function handleScrape() {
   });
 
   const activeSources = globalSources.value.filter((s) => s.isActive);
+  const activeSourceNames = activeSources.map((s) => s.name);
 
   try {
-    // Kick off a fresh scrape on the backend, then pull the stored items.
+    // The backend always scrapes every source it supports in one go, so we
+    // filter the results down to just the sources the user has added in
+    // the Website Manager tab.
     await runScrape();
     const res = await getItems(1);
     const items = res.data?.items || [];
 
-    globalArticles.value = items.map((item, index) => ({
-      id: `${item.source}-${index}-${item.scraped_at || Date.now()}`,
-      title: item.title,
-      link: item.url || "#",
-      description: (item.description || item.summary || "")
-        .replace(/<[^>]*>/g, "")
-        .substring(0, 180) + "...",
-      sourceName: item.source,
-      category: item.category || "General",
-    }));
+    globalArticles.value = items
+      .filter((item) => activeSourceNames.includes(item.source))
+      .map((item, index) => ({
+        id: `${item.source}-${index}-${item.scraped_at || Date.now()}`,
+        title: item.title,
+        link: item.url || "#",
+        description: (item.description || item.summary || "")
+          .replace(/<[^>]*>/g, "")
+          .substring(0, 180) + "...",
+        sourceName: item.source,
+        category: item.category || "General",
+      }));
 
     activeSources.forEach((source) => {
       source.lastScrape = `Success: ${timestamp}`;
@@ -110,6 +115,19 @@ async function handleScrape() {
       <button class="btn-primary" @click="handleScrape" :disabled="loading">
         {{ loading ? "Running Extraction..." : "Run Scrape Job" }}
       </button>
+    </div>
+
+    <div class="guide-card">
+      <div class="guide-step">
+        <strong>1.</strong> Select the sources you want to scrape from the Websites page.
+      </div>
+      <div class="guide-step">
+        <strong>2.</strong> Return to Dashboard and click <em>Run Scrape Job</em>.
+      </div>
+      <div class="guide-step">
+        <strong>3.</strong> Wait a few seconds while the scraper collects the latest headlines.
+      </div>
+      <div class="guide-tip">Tip: use filters or search to narrow results after the scrape finishes.</div>
     </div>
 
     <div class="stats-grid">
@@ -246,7 +264,27 @@ async function handleScrape() {
   opacity: 0.6;
   cursor: not-allowed;
 }
+.guide-card {
+  padding: 18px 22px;
+  background: white;
+  border: 1px solid rgba(33, 33, 97, 0.08);
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+}
 
+.guide-step {
+  display: flex;
+  gap: 10px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.guide-tip {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

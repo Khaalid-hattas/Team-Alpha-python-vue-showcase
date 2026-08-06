@@ -1,31 +1,38 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { SUPPORTED_SOURCES } from '../constants/sources'
+
+const props = defineProps({
+  existingNames: {
+    type: Array,
+    default: () => []
+  }
+})
 
 const emit = defineEmits(['site-added'])
 
-const siteName = ref('')
-const siteUrl = ref('')
-const category = ref('Local')
+const selectedName = ref('')
+
+// Only offer sources that are actually supported AND not already registered,
+// so users can't pick from a list of arbitrary/unsupported feeds or add
+// duplicates.
+const availableSources = computed(() =>
+  SUPPORTED_SOURCES.filter(source => !props.existingNames.includes(source.name))
+)
 
 function handleAdd() {
-  if (!siteName.value.trim() || !siteUrl.value.trim()) return
+  if (!selectedName.value) return
 
-  let url = siteUrl.value.trim()
-
-  // Automatically add https:// if the user doesn't type it
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = `https://${url}`
-  }
+  const source = SUPPORTED_SOURCES.find(s => s.name === selectedName.value)
+  if (!source) return
 
   emit('site-added', {
-    name: siteName.value.trim(),
-    url,
-    category: category.value
+    name: source.name,
+    url: source.url,
+    category: source.category
   })
 
-  siteName.value = ''
-  siteUrl.value = ''
-  category.value = 'Local'
+  selectedName.value = ''
 }
 </script>
 
@@ -38,45 +45,32 @@ function handleAdd() {
       </p>
     </div>
 
-    <form @submit.prevent="handleAdd" class="form">
+    <form v-if="availableSources.length > 0" @submit.prevent="handleAdd" class="form">
       <div class="field">
-        <label>Stream Reference Name</label>
-        <input
-          v-model="siteName"
-          type="text"
-          placeholder="e.g. BBC World News"
-          required
-        />
-      </div>
+        <label>Available Source</label>
 
-      <div class="field">
-        <label>Remote Target RSS URL Link</label>
-        <input
-          v-model="siteUrl"
-          type="text"
-          placeholder="https://feeds.bbci.co.uk/news/rss.xml"
-          required
-        />
-      </div>
-
-      <div class="field">
-        <label>Category Mapped Tag</label>
-
-        <select v-model="category">
-          <option>Local</option>
-          <option>Politics</option>
-          <option>World</option>
-          <option>Sport</option>
-          <option>Business</option>
+        <select v-model="selectedName" required>
+          <option value="" disabled>Select a source&hellip;</option>
+          <option
+            v-for="source in availableSources"
+            :key="source.name"
+            :value="source.name"
+          >
+            {{ source.name }}
+          </option>
         </select>
       </div>
 
       <div class="field button-field">
-        <button type="submit" class="btn-primary">
+        <button type="submit" class="btn-primary" :disabled="!selectedName">
           Add Pipeline Stream
         </button>
       </div>
     </form>
+
+    <p v-else class="all-added">
+      All supported sources have already been added.
+    </p>
   </div>
 </template>
 
@@ -101,7 +95,7 @@ function handleAdd() {
 .form {
   padding: 0 24px 24px;
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr auto;
+  grid-template-columns: 1fr auto;
   gap: 20px;
   align-items: end;
 }
@@ -118,7 +112,6 @@ function handleAdd() {
   color: var(--text);
 }
 
-.field input,
 .field select {
   width: 100%;
   height: 46px;
@@ -131,7 +124,6 @@ function handleAdd() {
   transition: border-color 0.2s ease;
 }
 
-.field input:focus,
 .field select:focus {
   outline: none;
   border-color: var(--primary);
@@ -156,11 +148,22 @@ function handleAdd() {
   transition: background 0.2s ease;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: #130d43;
 }
 
-@media (max-width: 1100px) {
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.all-added {
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
   .form {
     grid-template-columns: 1fr;
   }

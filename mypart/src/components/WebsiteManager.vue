@@ -1,9 +1,12 @@
 <script setup>
 import { inject } from 'vue'
 import AddSiteForm from './AddSiteForm.vue'
+import { AVAILABILITY_NOTE } from '../constants/sources'
 
 const sources = inject('globalSources')
 const globalArticles = inject('globalArticles')
+
+const availabilityNote = AVAILABILITY_NOTE
 
 function handleSiteAdded(newSite) {
   sources.value.push({
@@ -29,12 +32,16 @@ function removeSource(id) {
       <p>Add, Monitor and Remove Scraping Targets</p>
     </div>
 
-    <AddSiteForm @site-added="handleSiteAdded" />
+    <AddSiteForm :existing-names="sources.map(s => s.name)" @site-added="handleSiteAdded" />
 
-    <div class="card">
-      <div class="card-header">
-        <h2>Registered Target Pipelines</h2>
-      </div>
+        <div class="card">
+          <div class="card-header">
+            <h2>Registered Target Pipelines</h2>
+          </div>
+
+          <div v-if="availabilityNote" class="availability-note">
+            {{ availabilityNote }}
+          </div>
 
       <div class="table-wrapper">
         <table class="table">
@@ -123,6 +130,14 @@ function removeSource(id) {
 .card-header h2 {
   font-size: 16px;
   font-weight: 600;
+}
+
+.availability-note {
+  padding: 12px 24px;
+  font-size: 13px;
+  color: #7a5b00;
+  background: #fff8e1;
+  border-bottom: 1px solid var(--border);
 }
 
 .table-wrapper {
