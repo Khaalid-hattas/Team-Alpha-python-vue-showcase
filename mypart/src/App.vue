@@ -1,15 +1,10 @@
 <script setup>
 import { ref, provide } from 'vue'
-import MainControls from './components/MainControls.vue'
-import WebsiteManager from './components/WebsiteManager.vue'
-
-const activeTab = ref('Dashboard')
 
 const globalStats = ref({
   top_categories: []
 })
 
-// RSS feed sources
 const sourcesList = ref([
   {
     id: 1,
@@ -28,21 +23,40 @@ const sourcesList = ref([
     isActive: true
   },
   {
-    id: 3,
-    name: 'BBC',
-    url: 'https://feeds.bbci.co.uk/news/rss.xml',
-    category: 'World',
-    lastScrape: 'Never Scraped',
-    isActive: true
-  }
+  id: 3,
+  name: 'BBC',
+  url: 'https://bbci.co.uk',
+  category: 'World',
+  lastScrape: 'Never Scraped',
+  isActive: true
+},
+{
+  id: 4,
+  name: 'SABC News',
+  url: 'https://www.sabcnews.com/sabcnews/feed/',
+  category: 'Local',
+  lastScrape: 'Never Scraped',
+  isActive: true
+}
 ])
 
 const globalArticles = ref([])
+const selectedSourceName = ref('')
+
+function setSelectedSourceName(sourceName) {
+  selectedSourceName.value = sourceName || ''
+}
+
+function clearSelectedSourceName() {
+  selectedSourceName.value = ''
+}
 
 provide('globalSources', sourcesList)
 provide('globalArticles', globalArticles)
-provide('activeTab', activeTab)
 provide('globalStats', globalStats)
+provide('selectedSourceName', selectedSourceName)
+provide('setSelectedSourceName', setSelectedSourceName)
+provide('clearSelectedSourceName', clearSelectedSourceName)
 </script>
 
 <template>
@@ -55,41 +69,37 @@ provide('globalStats', globalStats)
         </div>
 
         <nav class="nav">
-          <button
-            :class="{ active: activeTab === 'Dashboard' }"
-            @click="activeTab = 'Dashboard'"
-          >
+          <RouterLink to="/" class="nav-link" active-class="active" exact-active-class="active">
+            <span class="nav-icon" aria-hidden="true"></span>
             Dashboard
-          </button>
+          </RouterLink>
 
-          <button
-            :class="{ active: activeTab === 'Websites' }"
-            @click="activeTab = 'Websites'"
-          >
+          <RouterLink to="/websites" class="nav-link" active-class="active">
+            <span class="nav-icon" aria-hidden="true"></span>
             Websites
-          </button>
+          </RouterLink>
+
+          <RouterLink to="/global-map" class="nav-link" active-class="active">
+            <span class="nav-icon" aria-hidden="true"></span>
+            Global Map
+          </RouterLink>
+
         </nav>
       </div>
     </header>
 
     <main class="main">
       <div class="container">
-
-        <div class="page" v-show="activeTab === 'Dashboard'">
-          <MainControls />
+        <div class="page">
+          <RouterView />
         </div>
-
-        <div class="page" v-show="activeTab === 'Websites'">
-          <WebsiteManager />
-        </div>
-
       </div>
     </main>
   </div>
 </template>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://googleapis.com');
 
 :root {
   --navy: #212161;
@@ -170,15 +180,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  width: 220px;
+  width: 480px;
   flex-shrink: 0;
-  gap: 32px;
+  gap: 20px;
 }
 
-.nav button {
-  background: none;
-  border: none;
-  cursor: pointer;
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-muted);
@@ -187,10 +198,18 @@ body {
   transition: .2s;
 }
 
-.nav button.active {
+.nav-link.active {
   color: var(--primary);
   font-weight: 600;
   border-bottom: 2px solid var(--primary);
+}
+
+.nav-icon {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.65;
 }
 
 .main {
@@ -214,6 +233,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
 }
+
 
 @keyframes fade {
   from {

@@ -6,8 +6,18 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
+      name: 'Dashboard',
       component: HomeView,
+    },
+    {
+      path: '/websites',
+      name: 'Websites',
+      component: () => import('../views/WebsitesView.vue'),
+    },
+    {
+      path: '/global-map',
+      name: 'GlobalMap',
+      component: () => import('../views/GlobalMap.vue'),
     },
     {
       path: '/about',

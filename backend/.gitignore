@@ -1,0 +1,43 @@
+# Environment variables
+.env
+.env.local
+
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python bytecode / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Flask instance folder
+instance/
+
+# Local data / database
+data/*.db
+data/*.sqlite3
+
+# Logs
+*.log
+
+# VS Code
+.vscode/*
+!.vscode/tasks.json
+!.vscode/extensions.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Node 
+node_modules/
+dist/
+.env.development
+.env.production

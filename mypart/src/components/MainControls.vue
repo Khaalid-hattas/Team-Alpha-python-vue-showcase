@@ -1,151 +1,114 @@
 <script setup>
-import { ref, inject, computed } from 'vue'
-import DataDisplay from './DataDisplay.vue'
+import { ref, inject, computed } from "vue";
+import DataDisplay from "./DataDisplay.vue";
+import { runScrape, getItems } from "@/services/api";
 
-const query = ref('')
-const activeFilter = ref('All')
-const loading = ref(false)
+const query = ref("");
+const activeFilter = ref("All");
+const loading = ref(false);
 
-const filters = [
-  'All',
-  'Politics',
-  'World',
-  'Local',
-  'Sport',
-  'Business'
-]
+const filters = ["All", "Politics", "World", "Local", "Sport", "Business"];
 
-const globalSources = inject('globalSources')
-const globalArticles = inject('globalArticles')
+const globalSources = inject("globalSources");
+const globalArticles = inject("globalArticles");
+const selectedSourceName = inject("selectedSourceName", ref(""));
+const clearSelectedSourceName = inject("clearSelectedSourceName", () => {});
 
 const globalStats = computed(() => {
-  const counts = {}
+  const counts = {};
 
-  globalArticles.value.forEach(article => {
-    counts[article.category] = (counts[article.category] || 0) + 1
-  })
+  globalArticles.value.forEach((article) => {
+    counts[article.category] = (counts[article.category] || 0) + 1;
+  });
 
   return {
     top_categories: Object.entries(counts).map(([name, count]) => ({
       name,
-      count
-    }))
-  }
-})
-
-async function fetchRSS(url) {
-  const proxy1 = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`
-
-  try {
-    const res = await fetch(proxy1)
-    const data = await res.json()
-
-    if (data.status === 'ok') {
-      return data.items
-    }
-
-    throw new Error(data.message)
-  } catch (e) {
-    console.warn('rss2json failed, trying backup')
-
-    const proxy2 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
-
-    const res2 = await fetch(proxy2)
-    const data2 = await res2.json()
-
-    const parser = new DOMParser()
-
-    const xml = parser.parseFromString(
-      data2.contents,
-      'text/xml'
-    )
-
-    return Array.from(xml.querySelectorAll('item')).map(item => ({
-      title: item.querySelector('title')?.textContent || '',
-      link: item.querySelector('link')?.textContent || '#',
-      description:
-        item.querySelector('description')?.textContent || ''
-    }))
-  }
-}
+      count,
+    })),
+  };
+});
 
 const filteredArticles = computed(() => {
-  let articles = globalArticles.value
+  let articles = globalArticles.value;
 
-  if (activeFilter.value !== 'All') {
+  if (selectedSourceName.value) {
     articles = articles.filter(
-      article =>
-        article.category.toLowerCase() ===
-        activeFilter.value.toLowerCase()
-    )
+      (article) => article.sourceName === selectedSourceName.value,
+    );
+  }
+
+  if (activeFilter.value !== "All") {
+    articles = articles.filter(
+      (article) =>
+        article.category.toLowerCase() === activeFilter.value.toLowerCase(),
+    );
   }
 
   if (query.value.trim()) {
-    const search = query.value.toLowerCase()
+    const search = query.value.toLowerCase();
 
-    articles = articles.filter(article =>
-      article.title.toLowerCase().includes(search) ||
-      article.description.toLowerCase().includes(search) ||
-      article.sourceName.toLowerCase().includes(search)
-    )
+    articles = articles.filter(
+      (article) =>
+        article.title.toLowerCase().includes(search) ||
+        article.description.toLowerCase().includes(search) ||
+        article.sourceName.toLowerCase().includes(search),
+    );
   }
 
-  return articles
-})
+  return articles;
+});
 
 async function handleScrape() {
-  loading.value = true
-  globalArticles.value = []
+  loading.value = true;
 
   const timestamp = new Date().toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-    for (const source of globalSources.value.filter(s => s.isActive)) {
-    try {
-      const items = await fetchRSS(source.url)
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-      items.slice(0, 15).forEach((item, index) => {
-        globalArticles.value.push({
-          id: `${source.id}-${index}-${Date.now()}`,
-          title: item.title,
-          link: item.link,
-          description:
-            (item.description || '')
-              .replace(/<[^>]*>/g, '')
-              .substring(0, 200) + '...',
-          sourceName: source.name,
-          category: source.category
-        })
-      })
+  const activeSources = globalSources.value.filter((s) => s.isActive);
 
-      source.lastScrape = `Success: ${timestamp}`
-    } catch (error) {
-      console.error(error)
-      source.lastScrape = 'Failed'
-    }
+  try {
+    // Kick off a fresh scrape on the backend, then pull the stored items.
+    await runScrape();
+    const res = await getItems(1);
+    const items = res.data?.items || [];
+
+    globalArticles.value = items.map((item, index) => ({
+      id: `${item.source}-${index}-${item.scraped_at || Date.now()}`,
+      title: item.title,
+      link: item.url || "#",
+      description: (item.description || item.summary || "")
+        .replace(/<[^>]*>/g, "")
+        .substring(0, 180) + "...",
+      sourceName: item.source,
+      category: item.category || "General",
+    }));
+
+    activeSources.forEach((source) => {
+      source.lastScrape = `Success: ${timestamp}`;
+    });
+  } catch (error) {
+    console.error("Scrape failed:", error);
+    activeSources.forEach((source) => {
+      source.lastScrape = "Failed";
+    });
   }
 
-  loading.value = false
+  loading.value = false;
 }
 </script>
-
 <template>
   <div class="dashboard">
     <div class="dashboard-header">
       <div>
         <h1>Dashboard Overview</h1>
-        <p class="muted">
-          Real-time asynchronous news parsing engine
-        </p>
+        <p class="muted">Real-time asynchronous news parsing engine</p>
       </div>
 
-      <button
-        class="btn-primary"
-        @click="handleScrape"
-        :disabled="loading"
-      >
-        {{ loading ? 'Running Extraction...' : 'Run Scrape Job' }}
+      <button class="btn-primary" @click="handleScrape" :disabled="loading">
+        {{ loading ? "Running Extraction..." : "Run Scrape Job" }}
       </button>
     </div>
 
@@ -163,7 +126,9 @@ async function handleScrape() {
       <div class="card stat">
         <div class="stat-label">Active Sources</div>
         <div class="stat-value">
-          {{ globalSources.filter(s => s.isActive).length }}/{{ globalSources.length }}
+          {{ globalSources.filter((s) => s.isActive).length }}/{{
+            globalSources.length
+          }}
         </div>
       </div>
     </div>
@@ -171,6 +136,17 @@ async function handleScrape() {
     <DataDisplay :stats="globalStats" />
 
     <div class="card filter-card">
+      <div v-if="selectedSourceName" class="selection-banner">
+        <div>
+          <strong>Map filter active:</strong>
+          <span>{{ selectedSourceName }}</span>
+        </div>
+
+        <button class="clear-filter-btn" @click="clearSelectedSourceName()">
+          Show all sources
+        </button>
+      </div>
+
       <div class="search-row">
         <input
           v-model="query"
@@ -196,13 +172,13 @@ async function handleScrape() {
     <div class="card">
       <div class="card-header">
         <h2>
-          Aggregated Articles Output Feed
-          ({{ filteredArticles.length }} entries found)
+          Aggregated Articles Output Feed ({{ filteredArticles.length }} entries
+          found)
         </h2>
       </div>
 
       <div class="articles">
-                <a
+        <a
           v-for="article in filteredArticles"
           :key="article.id"
           :href="article.link"
@@ -219,10 +195,7 @@ async function handleScrape() {
           <p>{{ article.description }}</p>
         </a>
 
-        <div
-          v-if="filteredArticles.length === 0 && !loading"
-          class="empty"
-        >
+        <div v-if="filteredArticles.length === 0 && !loading" class="empty">
           No articles match your filters. Click "Run Scrape Job".
         </div>
       </div>
@@ -262,7 +235,7 @@ async function handleScrape() {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -299,6 +272,44 @@ async function handleScrape() {
   padding: 20px 24px;
 }
 
+.selection-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #eef4ff;
+  border: 1px solid #d6e4ff;
+  color: var(--text);
+}
+
+.selection-banner strong {
+  margin-right: 6px;
+}
+
+.selection-banner span {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.clear-filter-btn {
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.clear-filter-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .search-row {
   margin-bottom: 16px;
 }
@@ -310,7 +321,7 @@ async function handleScrape() {
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .search-input:focus {
@@ -333,7 +344,7 @@ async function handleScrape() {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   transition: all 0.15s ease;
 }
 

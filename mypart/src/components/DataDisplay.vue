@@ -1,24 +1,9 @@
 <script setup>
 import { computed } from 'vue'
 import { Bar } from 'vue-chartjs'
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale
-} from 'chart.js'
+import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
 
-ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale
-)
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const props = defineProps({
   stats: {
@@ -32,74 +17,36 @@ const props = defineProps({
 const categories = computed(() => props.stats?.top_categories ?? [])
 
 const chartData = computed(() => ({
-  labels: categories.value.map(item => item.name),
-  datasets: [
-    {
-      label: 'Articles',
-      data: categories.value.map(item => item.count),
-      backgroundColor: '#1b1464',
-      borderColor: '#130d43',
-      borderWidth: 1,
-      borderRadius: 4
-    }
-  ]
+  labels: categories.value.map(c => c.name),
+  datasets: [{
+    label: 'Articles',
+    data: categories.value.map(c => c.count),
+    backgroundColor: '#4285f4'
+  }]
 }))
 
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false
-    },
-    tooltip: {
-      backgroundColor: '#202124',
-      titleFont: {
-        family: 'Inter'
-      },
-      bodyFont: {
-        family: 'Inter'
-      }
-    }
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      grid: {
-        color: '#dadce0'
-      },
-      ticks: {
-        font: {
-          family: 'Inter'
-        }
-      }
-    },
-    x: {
-      grid: {
-        display: false
-      },
-      ticks: {
-        font: {
-          family: 'Inter'
-        }
-      }
-    }
-  }
+  plugins: { legend: { display: false } }
 }
 </script>
 
 <template>
   <div class="charts-row">
+    <!-- Left Empty Space Holder for Layout Consistency -->
+    <!-- Top Categories Bar Chart -->
     <div class="card chart-card">
       <div class="card-header-inline">
-        <h3>Articles by Category</h3>
+        <h3>System Metrics Panel</h3>
       </div>
-
-      <div class="chart-wrapper">
-        <Bar :data="chartData" :options="chartOptions" />
+      <div class="chart-box">
+        <Bar v-if="categories.length" :data="chartData" :options="chartOptions" />
+        <div v-else class="empty-msg-box">No analytics data yet.</div>
       </div>
     </div>
 
+    <!-- Analytics Breakdown Metrics Data Table -->
     <div class="card table-card">
       <div class="card-header-inline">
         <h3>Top Categories Metrics</h3>
@@ -149,6 +96,11 @@ const chartOptions = {
   width: 100%;
 }
 
+.chart-box {
+  padding: 20px;
+  height: 280px;
+}
+
 .chart-card,
 .table-card {
   flex: 1;
@@ -167,10 +119,12 @@ const chartOptions = {
   color: var(--text);
 }
 
-.chart-wrapper {
-  padding: 24px;
-  height: 280px;
-  position: relative;
+.empty-msg-box {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: auto;
 }
 
 .table-container {

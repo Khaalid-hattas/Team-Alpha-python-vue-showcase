@@ -21,7 +21,7 @@ export const searchItems = (q) =>
   })
 
 // Scraping
-export const runScrape = () => api.post('/scrape')
+export const runScrape = () => api.get('/scrape', { timeout: 180000 }) // up to 3 min — real scraping is slow
 
 // History
 export const getHistory = () => api.get('/history')
