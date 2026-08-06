@@ -5,7 +5,7 @@ from services.scraper_service import get_scheduler_status #fetches from scraper 
 statistics_bp = Blueprint("statistics", __name__)
 
 # Endpoint to return dashboard statistics added the GET METHOD
-@statistics_bp.route("/api/statistics", methods=["GET"])
+@statistics_bp.route("/statistics", methods=["GET"])
 def statistics():
 
     # Updated  removed place holder
