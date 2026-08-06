@@ -117,6 +117,19 @@ async function handleScrape() {
       </button>
     </div>
 
+    <div class="guide-card">
+      <div class="guide-step">
+        <strong>1.</strong> Select the sources you want to scrape from the Websites page.
+      </div>
+      <div class="guide-step">
+        <strong>2.</strong> Return to Dashboard and click <em>Run Scrape Job</em>.
+      </div>
+      <div class="guide-step">
+        <strong>3.</strong> Wait a few seconds while the scraper collects the latest headlines.
+      </div>
+      <div class="guide-tip">Tip: use filters or search to narrow results after the scrape finishes.</div>
+    </div>
+
     <div class="stats-grid">
       <div class="card stat">
         <div class="stat-label">Total Items Fetched</div>
@@ -251,7 +264,27 @@ async function handleScrape() {
   opacity: 0.6;
   cursor: not-allowed;
 }
+.guide-card {
+  padding: 18px 22px;
+  background: white;
+  border: 1px solid rgba(33, 33, 97, 0.08);
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+}
 
+.guide-step {
+  display: flex;
+  gap: 10px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.guide-tip {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

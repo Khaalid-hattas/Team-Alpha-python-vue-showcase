@@ -2,6 +2,7 @@
 import { ref, provide } from 'vue'
 import { SUPPORTED_SOURCES } from './constants/sources'
 
+const mobileMenuOpen = ref(false)
 const globalStats = ref({
   top_categories: []
 })
@@ -39,18 +40,45 @@ provide('clearSelectedSourceName', clearSelectedSourceName)
           <h1>SCRAPING ANALYTICS PLATFORM</h1>
         </div>
 
-        <nav class="nav">
-          <RouterLink to="/" class="nav-link" active-class="active" exact-active-class="active">
+        <button
+          class="nav-toggle"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+          :aria-expanded="mobileMenuOpen"
+          aria-label="Toggle navigation"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <nav class="nav" :class="{ open: mobileMenuOpen }">
+          <RouterLink
+            to="/"
+            class="nav-link"
+            active-class="active"
+            exact-active-class="active"
+            @click="mobileMenuOpen = false"
+          >
             <span class="nav-icon" aria-hidden="true"></span>
             Dashboard
           </RouterLink>
 
-          <RouterLink to="/websites" class="nav-link" active-class="active">
+          <RouterLink
+            to="/websites"
+            class="nav-link"
+            active-class="active"
+            @click="mobileMenuOpen = false"
+          >
             <span class="nav-icon" aria-hidden="true"></span>
             Websites
           </RouterLink>
 
-          <RouterLink to="/global-map" class="nav-link" active-class="active">
+          <RouterLink
+            to="/global-map"
+            class="nav-link"
+            active-class="active"
+            @click="mobileMenuOpen = false"
+          >
             <span class="nav-icon" aria-hidden="true"></span>
             Global Map
           </RouterLink>
@@ -183,9 +211,96 @@ body {
   opacity: 0.65;
 }
 
+.nav-toggle {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav.open {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  padding: 18px 32px 22px;
+  border-bottom: 1px solid var(--border);
+}
+
 .main {
   width: 100%;
   padding: 28px 0;
+}
+
+@media (max-width: 960px) {
+  .header-inner {
+    padding: 0 18px;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .brand {
+    width: auto;
+  }
+
+  .nav-toggle {
+    display: flex;
+  }
+
+  .nav {
+    display: none;
+    width: 100%;
+  }
+
+  .nav.open {
+    display: flex;
+  }
+
+  .nav-link {
+    width: 100%;
+    padding: 10px 0;
+  }
+
+  .nav-link.active {
+    border-bottom: none;
+    background: rgba(27, 20, 100, 0.05);
+    border-radius: 8px;
+    padding-left: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .header-inner {
+    padding: 0 14px;
+  }
+
+  .nav.open {
+    padding: 16px;
+  }
+
+  .nav-link {
+    font-size: 13px;
+  }
 }
 
 .container {
