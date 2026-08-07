@@ -11,8 +11,10 @@ export const getStatistics = () => api.get('/statistics')
 // Items
 export const getItems = (page = 1, category = null) =>
   api.get('/items', {
+    params:{
     page,
     category
+    }
   })
 
 // Search
@@ -22,13 +24,13 @@ export const searchItems = (q) =>
   })
 
 // Scraping
-export const runScrape = () => api.post('/scrape', { timeout: 180000 }) // up to 3 min — real scraping is slow
+export const runScrape = () => api.post('/scrape', {}, { timeout: 180000 }) // up to 3 min — real scraping is slow
 
 // History
 export const getHistory = () => api.get('/history')
 
 // Websites
-export const getWebsites = () => api.post('/websites')
+export const getWebsites = () => api.get('/websites')
 
 export const addWebsite = (site) =>
   api.post('/websites', site)
