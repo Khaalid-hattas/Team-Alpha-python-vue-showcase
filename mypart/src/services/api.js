@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'https://team-alpha-python-vue-showcase-back.onrender.com/',
+  baseURL: 'https://team-alpha-python-vue-showcase-back.onrender.com/api',
   timeout: 8000,
 })
 
