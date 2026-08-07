@@ -5,7 +5,7 @@ from services.scraper_service import scrape_all_sources
 
 scrape_bp = Blueprint("scrape", __name__)
 
-@scrape_bp.route("/api/scrape", methods=["GET"])
+@scrape_bp.route("/api/scrape", methods=["POST"])
 def scrape():
 
     force_full = request.args.get("force_full", "false").lower() == "true"
