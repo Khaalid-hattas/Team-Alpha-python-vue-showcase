@@ -4,10 +4,9 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 export class GlobeScene {
   constructor(canvas) {
     this.canvas = canvas;
-    this.width = canvas.clientWidth || 800;
-    this.height = canvas.clientHeight || 600;
+    this.width = canvas.clientWidth;
+    this.height = canvas.clientHeight;
     this.nodeMeshes = [];
-    this.clickableObjects = [];
     this.animationFrameId = null;
     this.clock = new THREE.Clock();
     this.raycaster = new THREE.Raycaster();
@@ -52,7 +51,7 @@ export class GlobeScene {
       42,
       this.width / this.height,
       0.1,
-      1000
+      1000,
     );
     this.camera.position.set(0, 2.6, 5.5);
 
@@ -102,7 +101,6 @@ export class GlobeScene {
 
     this.animate();
   }
-
   buildGlobeGeometry() {
     const particleCount = 2500;
     this.particleGeometry = new THREE.BufferGeometry();
@@ -131,6 +129,7 @@ export class GlobeScene {
       this.originalPositions[i3 + 1] = y;
       this.originalPositions[i3 + 2] = z;
 
+      // FIXED MATH HERE: Explicitly using index strings to avoid canvas compilation drops
       const driftVec = new THREE.Vector3(x, y, z).normalize();
       this.randomDirections[i3] = driftVec.x + (Math.random() - 0.5) * 0.5;
       this.randomDirections[i3 + 1] = driftVec.y + (Math.random() - 0.5) * 0.5;
@@ -141,7 +140,7 @@ export class GlobeScene {
 
     this.particleGeometry.setAttribute(
       "position",
-      new THREE.BufferAttribute(this.positions, 3)
+      new THREE.BufferAttribute(this.positions, 3),
     );
 
     const particleMat = new THREE.PointsMaterial({
@@ -162,20 +161,17 @@ export class GlobeScene {
     return new THREE.Vector3(
       -(this.globeRadius * Math.sin(phi) * Math.sin(theta)),
       this.globeRadius * Math.cos(phi),
-      this.globeRadius * Math.sin(phi) * Math.cos(theta)
+      this.globeRadius * Math.sin(phi) * Math.cos(theta),
     );
   }
 
   buildTargetNodes() {
-    // Safely cleanup old meshes
-    if (this.nodeMeshes && this.nodeMeshes.length > 0) {
-      this.nodeMeshes.forEach((n) => {
-        if (n.group) this.nodeGroup.remove(n.group);
-      });
-    }
-
+    this.nodeMeshes.forEach((n) => this.nodeGroup.remove(n.group));
     this.nodeMeshes = [];
     this.clickableObjects = [];
+
+    console.log("Building nodes:", this.targetNodesData.length);
+    console.log(this.targetNodesData);
 
     this.targetNodesData.forEach((node) => {
       const coords = this.calcPosFromLatLon(node.lat, node.lon);
@@ -183,6 +179,7 @@ export class GlobeScene {
       if (node.id === "EWN") {
         const direction = coords.clone().normalize();
         coords.add(direction.multiplyScalar(0.18));
+
         coords.x -= 0.18;
         coords.y += 0.12;
       }
@@ -190,10 +187,11 @@ export class GlobeScene {
       if (node.id === "SABC News") {
         const direction = coords.clone().normalize();
         coords.add(direction.multiplyScalar(0.18));
+
         coords.x += 0.18;
         coords.y -= 0.12;
       }
-
+      console.log(node.id, coords.x, coords.y, coords.z);
       const targetGroup = new THREE.Group();
       targetGroup.userData = node;
       targetGroup.position.copy(coords);
@@ -223,12 +221,13 @@ export class GlobeScene {
         new THREE.MeshBasicMaterial({
           transparent: true,
           opacity: 0,
-        })
+        }),
       );
+
       targetGroup.add(hitbox);
 
       this.nodeGroup.add(targetGroup);
-      this.clickableObjects.push(hitbox); // Add hitbox explicitly for raycasting
+      this.clickableObjects.push(targetGroup);
 
       this.nodeMeshes.push({
         id: node.id,
@@ -240,7 +239,6 @@ export class GlobeScene {
       });
     });
   }
-
   triggerExplosion() {
     if (this.globeState !== "NORMAL") return;
     this.globeState = "EXPLODED";
@@ -268,24 +266,19 @@ export class GlobeScene {
   }
 
   updateFromData(sourceStatuses) {
-    if (!sourceStatuses || typeof sourceStatuses !== "object") return;
+    console.log(sourceStatuses);
 
     this.targetNodesData.forEach((node) => {
-      // Robust key lookup to prevent failure on case or space discrepancies
-      const matchKey = Object.keys(sourceStatuses).find(
-        (key) => key.toLowerCase() === node.id.toLowerCase()
-      );
-
-      if (matchKey !== undefined) {
-        node.success = Boolean(sourceStatuses[matchKey]);
+      if (sourceStatuses[node.id] !== undefined) {
+        node.success = sourceStatuses[node.id];
       }
     });
-
     this.buildTargetNodes();
+
+    console.log(this.targetNodesData);
   }
 
   pickNode(mouseX, mouseY) {
-    if (!this.canvas) return null;
     const rect = this.canvas.getBoundingClientRect();
 
     this.mouse.x = ((mouseX - rect.left) / rect.width) * 2 - 1;
@@ -295,7 +288,7 @@ export class GlobeScene {
 
     const intersects = this.raycaster.intersectObjects(
       this.clickableObjects,
-      true
+      true,
     );
 
     if (intersects.length === 0) {
@@ -304,7 +297,7 @@ export class GlobeScene {
 
     let object = intersects[0].object;
 
-    while (object && (!object.userData || !object.userData.id)) {
+    while (object && !object.userData.id) {
       object = object.parent;
     }
 
@@ -312,9 +305,6 @@ export class GlobeScene {
   }
 
   resize(width, height) {
-    if (!width || !height) return;
-    this.width = width;
-    this.height = height;
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
@@ -347,23 +337,23 @@ export class GlobeScene {
           posAttr.array[i3] = THREE.MathUtils.lerp(
             posAttr.array[i3],
             this.originalPositions[i3],
-            t
+            t,
           );
           posAttr.array[i3 + 1] = THREE.MathUtils.lerp(
             posAttr.array[i3 + 1],
             this.originalPositions[i3 + 1],
-            t
+            t,
           );
           posAttr.array[i3 + 2] = THREE.MathUtils.lerp(
             posAttr.array[i3 + 2],
             this.originalPositions[i3 + 2],
-            t
+            t,
           );
         }
       }
       posAttr.needsUpdate = true;
       this.nodeGroup.scale.setScalar(
-        Math.max(0.001, 1 - this.stateTimer * 1.2)
+        Math.max(0.001, 1 - this.stateTimer * 1.2),
       );
 
       if (this.stateTimer >= 2.0) {
@@ -385,17 +375,17 @@ export class GlobeScene {
           posAttr.array[i3] = THREE.MathUtils.lerp(
             posAttr.array[i3],
             this.originalPositions[i3],
-            t
+            t,
           );
           posAttr.array[i3 + 1] = THREE.MathUtils.lerp(
             posAttr.array[i3 + 1],
             this.originalPositions[i3 + 1],
-            t
+            t,
           );
           posAttr.array[i3 + 2] = THREE.MathUtils.lerp(
             posAttr.array[i3 + 2],
             this.originalPositions[i3 + 2],
-            t
+            t,
           );
         }
       }
@@ -422,7 +412,7 @@ export class GlobeScene {
       this.burstMesh.scale.set(
         this.burstScale,
         this.burstScale,
-        this.burstScale
+        this.burstScale,
       );
       this.burstMat.opacity -= 0.012;
 
@@ -438,7 +428,7 @@ export class GlobeScene {
       node.ringMesh.scale.set(scaleValue, scaleValue, 1);
       node.ringMesh.material.opacity = Math.max(
         0,
-        0.8 - (scaleValue - 1) * 0.9
+        0.8 - (scaleValue - 1) * 0.9,
       );
     });
 
@@ -447,24 +437,14 @@ export class GlobeScene {
   }
 
   destroy() {
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-    }
-    if (this.controls) {
-      this.controls.dispose();
-    }
-    if (this.renderer) {
-      this.renderer.dispose();
-    }
-    if (this.scene) {
-      this.scene.traverse((obj) => {
-        if (!obj.isMesh && !obj.isPoints) return;
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) {
-          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
-          else obj.material.dispose();
-        }
-      });
-    }
+    cancelAnimationFrame(this.animationFrameId);
+    this.controls.dispose();
+    this.renderer.dispose();
+    this.scene.traverse((obj) => {
+      if (!obj.isMesh && !obj.isPoints) return;
+      obj.geometry.dispose();
+      if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
+      else obj.material.dispose();
+    });
   }
 }

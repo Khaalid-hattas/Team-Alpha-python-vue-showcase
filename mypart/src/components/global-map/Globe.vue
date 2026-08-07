@@ -53,12 +53,12 @@ function handleCinemaInputInteraction(event) {
   // Instantly route triggers based on the current rapid click sequence
   if (clickCount === 2) {
     console.log(
-      "Double Click Registered: Launching Particle Explosion Shockwave"
+      "Double Click Registered: Launching Particle Explosion Shockwave",
     );
     if (globeEngineInstance) globeEngineInstance.triggerExplosion();
   } else if (clickCount >= 3) {
     console.log(
-      "Triple Click Registered: Disassembling Sphere Matrix Assemblies"
+      "Triple Click Registered: Disassembling Sphere Matrix Assemblies",
     );
     if (globeEngineInstance) globeEngineInstance.triggerFractureCracking();
     clickCount = 0; // Flush click sequence track buffers
@@ -68,92 +68,70 @@ function handleCinemaInputInteraction(event) {
 function handleGlobeClick(event) {
   if (!globeEngineInstance) return;
 
-  try {
-    const pickedNode = globeEngineInstance.pickNode(event.clientX, event.clientY);
+  const pickedNode = globeEngineInstance.pickNode(event.clientX, event.clientY);
 
-    if (!pickedNode) return;
+  if (!pickedNode) return;
 
-    // Fuzzy match source name to prevent silent failures on backend naming discrepancies
-    const selected = props.nodes.find(
-      (node) =>
-        node.source_name &&
-        node.source_name.toLowerCase() === String(pickedNode.id).toLowerCase()
-    );
+  const selected = props.nodes.find(
+    (node) => node.source_name === pickedNode.id,
+  );
 
-    if (selected) {
-      emit("select", selected);
-    } else {
-      // Fallback emit if nodes prop isn't fully populated yet
-      emit("select", { source_name: pickedNode.id, status: pickedNode.success ? "green" : "red" });
-    }
-  } catch (err) {
-    console.error("Error handling globe node pick:", err);
+  if (selected) {
+    emit("select", selected);
   }
 }
 
-// Watch extraction loading state changes
 watch(
   () => props.loading,
   (isLoading) => {
     if (globeEngineInstance) {
       globeEngineInstance.triggerExtractionState(isLoading);
     }
-  }
+  },
 );
 
-// Watch incoming node data updates
 watch(
   () => props.nodes,
   (nodes) => {
-    if (!globeEngineInstance || !Array.isArray(nodes)) return;
+    console.log("Nodes received:", nodes);
+    console.log("Node count:", nodes.length);
+
+    if (!globeEngineInstance) return;
 
     const statuses = {};
 
     nodes.forEach((node) => {
-      if (node && node.source_name) {
-        statuses[node.source_name] = node.status === "green";
-      }
+      statuses[node.source_name] = node.status === "green";
     });
 
     globeEngineInstance.updateFromData(statuses);
   },
-  { deep: true }
+  { deep: true },
 );
 
 onMounted(() => {
   nextTick(() => {
     if (globeCanvas.value) {
-      try {
-        globeEngineInstance = new GlobeScene(globeCanvas.value);
-        window.addEventListener("resize", handleResize);
+      globeEngineInstance = new GlobeScene(globeCanvas.value);
+      window.addEventListener("resize", handleResize);
 
-        setTimeout(() => {
-          handleResize();
-          const statuses = {};
+      setTimeout(() => {
+        handleResize();
+        const statuses = {};
 
-          if (Array.isArray(props.nodes)) {
-            props.nodes.forEach((node) => {
-              if (node && node.source_name) {
-                statuses[node.source_name] = node.status === "green";
-              }
-            });
-          }
+        props.nodes.forEach((node) => {
+          statuses[node.source_name] = node.status === "green";
+        });
 
-          globeEngineInstance.updateFromData(statuses);
-        }, 100);
-      } catch (err) {
-        console.error("Failed to initialize 3D Globe Scene:", err);
-      }
+        globeEngineInstance.updateFromData(statuses);
+      }, 100);
     }
   });
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", handleResize);
-  if (globeEngineInstance) {
-    globeEngineInstance.destroy();
-    globeEngineInstance = null;
-  }
+  if (globeEngineInstance) globeEngineInstance.destroy();
 });
 </script>
 
@@ -189,14 +167,14 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .card-header-inline {
   padding: 20px 24px;
-  border-bottom: 1px solid var(--border, #e2e8f0);
+  border-bottom: 1px solid var(--border);
 }
 
 .title-indicator-row {
@@ -232,13 +210,13 @@ onUnmounted(() => {
 .card-header-inline h3 {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text, #0f172a);
+  color: var(--text);
   margin: 0;
 }
 
 .caption-text {
   font-size: 12px;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted);
   margin-top: 4px;
   margin-bottom: 0;
 }
