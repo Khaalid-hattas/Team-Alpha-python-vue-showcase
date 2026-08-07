@@ -1,44 +1,35 @@
 import axios from 'axios'
 
-// Create Axios instance with production backend base URL
 const api = axios.create({
   baseURL: 'https://team-alpha-python-vue-showcase-back.onrender.com/api',
-  timeout: 10000, // 10s default timeout for standard requests
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  timeout: 8000,
 })
 
-// ============================
-// API Endpoints
-// ============================
-
-// Statistics -> GET /api/statistics
+// Statistics
 export const getStatistics = () => api.get('/statistics')
 
-// Items -> GET /api/items?page=1&category=...
+// Items
 export const getItems = (page = 1, category = null) =>
   api.get('/items', {
-    params: { page, category },
+    params: { page, category }
   })
 
-// Search -> GET /api/search?q=...
+// Search
 export const searchItems = (q) =>
   api.get('/search', {
-    params: { q },
+    params: { q }
   })
 
-// Trigger Scraping -> POST /api/scrape
-// Note: Handled asynchronously on backend to prevent Render 502 HTTP timeouts
-export const runScrape = () =>
-  api.post('/scrape', {}, { timeout: 30000 }) 
+// Scraping
+export const runScrape = () => api.get('/scrape', { timeout: 180000 }) // up to 3 min — real scraping is slow
 
-// History -> GET /api/history
+// History
 export const getHistory = () => api.get('/history')
 
-// Websites -> GET /api/websites & POST /api/websites
+// Websites
 export const getWebsites = () => api.get('/websites')
 
-export const addWebsite = (site) => api.post('/websites', site)
+export const addWebsite = (site) =>
+  api.post('/websites', site)
 
 export default api
